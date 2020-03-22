@@ -1,20 +1,20 @@
-defprotocol CSP.Constraint do
+defprotocol Csp.Constraint do
   @type t :: any
 
-  @spec arguments(t) :: [CSP.variable()]
+  @spec arguments(t) :: [Csp.variable()]
   def arguments(constraint)
 
-  @spec satisfies?(t, CSP.assignment()) :: boolean()
+  @spec satisfies?(t, Csp.assignment()) :: boolean()
   def satisfies?(constraint, assignment)
 end
 
-defimpl CSP.Constraint, for: Tuple do
-  @type t :: {arguments :: [CSP.variable()], test_fun :: (any -> boolean)}
+defimpl Csp.Constraint, for: Tuple do
+  @type t :: {arguments :: [Csp.variable()], test_fun :: (any -> boolean)}
 
-  @spec arguments(t) :: [CSP.variable()]
+  @spec arguments(t) :: [Csp.variable()]
   def arguments({arguments, _test_fun}) when is_list(arguments), do: arguments
 
-  @spec satisfies?(t, CSP.assignment()) :: boolean()
+  @spec satisfies?(t, Csp.assignment()) :: boolean()
   def satisfies?({arguments, test_fun}, assignment) do
     actual_arguments = Enum.map(arguments, &Map.fetch!(assignment, &1))
 

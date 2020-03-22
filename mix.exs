@@ -1,4 +1,4 @@
-defmodule CSP.MixProject do
+defmodule Csp.MixProject do
   use Mix.Project
 
   def project do
@@ -7,7 +7,7 @@ defmodule CSP.MixProject do
       version: "0.1.0",
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
-      escript: [main_module: CSP.CLI],
+      escript: [main_module: Csp.CLI],
       deps: deps()
     ]
   end
@@ -16,7 +16,7 @@ defmodule CSP.MixProject do
   def application do
     [
       extra_applications: [:logger],
-      mod: {CSP.Application, []}
+      mod: {Csp.Application, []}
     ]
   end
 

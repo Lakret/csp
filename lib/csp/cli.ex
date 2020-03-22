@@ -1,4 +1,4 @@
-defmodule CSP.CLI do
+defmodule Csp.CLI do
   @moduledoc """
   Command line interface for constraint satisfaction.
   """
