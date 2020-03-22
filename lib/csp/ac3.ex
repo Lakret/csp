@@ -44,7 +44,9 @@ defmodule Csp.AC3 do
       # arc consistency for binary constraints
       [x, y] ->
         {csp, constraints_to_consider_from_x} = enforce_arc_consistency(csp, constraint, x, y)
+        IO.inspect(constraints_to_consider_from_x, label: :constraints_to_consider_from_x)
         {csp, constraints_to_consider_from_y} = enforce_arc_consistency(csp, constraint, y, x)
+        IO.inspect(constraints_to_consider_from_y, label: :constraints_to_consider_from_y)
 
         constraints =
           Enum.uniq(rest ++ constraints_to_consider_from_x ++ constraints_to_consider_from_y)
@@ -57,6 +59,8 @@ defmodule Csp.AC3 do
   end
 
   def enforce_arc_consistency(csp, constraint, x, y) do
+    IO.inspect({x, y}, label: :enforce_arc_consistency)
+
     x_original_domain = Map.fetch!(csp.domains, x)
     y_original_domain = Map.fetch!(csp.domains, y)
 
@@ -67,7 +71,7 @@ defmodule Csp.AC3 do
         end)
       end)
 
-    if length(x_reduced_domain) < x_original_domain do
+    if length(x_reduced_domain) < length(x_original_domain) do
       csp = %{csp | domains: Map.put(csp.domains, x, x_reduced_domain)}
 
       dependent_constraints =
