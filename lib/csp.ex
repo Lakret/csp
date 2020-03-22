@@ -2,7 +2,7 @@ defmodule Csp do
   @moduledoc """
   Constraint satisfaction problem definition & solver interface.
   """
-  alias Csp.Constraint
+  alias Csp.{Constraint, AC3, Searcher}
 
   @type variable :: atom
   @type value :: any
@@ -20,6 +20,31 @@ defmodule Csp do
         }
 
   defstruct [:variables, :domains, :constraints]
+
+  @doc """
+  Solves a CSP using a combination of AC3 and brute force search.
+
+  ## Options
+
+  - `ac3`, boolean, defaults to `true`: specifies if AC3 should be used to reduce
+  the domain of variables before performing brute force search.
+
+  Any additional options will be passed to `Searcher.brute_force/1`.
+  """
+  @spec solve(Csp.t(), Keyword.t()) :: :no_solution | {:solved, assignment() | [assignment()]}
+  def solve(%__MODULE__{} = csp, opts \\ []) do
+    ac3 = Keyword.get(opts, :ac3, true)
+
+    if ac3 do
+      case AC3.solve(csp) do
+        # brute force will just construct the solution if `:solved`, and search for it if `:reduced`.
+        {status, csp} when status in [:solved, :reduced] -> Searcher.brute_force(csp, opts)
+        {:no_solution, _} -> :no_solution
+      end
+    else
+      Searcher.brute_force(csp)
+    end
+  end
 
   @doc """
   Checks if `assignment` solves constraint satisfaction `problem`.
@@ -53,7 +78,7 @@ defmodule Csp do
   where X, Y are digits
   ```
   """
-  @spec squares_csp() :: Csp.t()
+  @spec squares_csp() :: t()
   def squares_csp() do
     digit_domain = 0..9 |> Enum.to_list()
 

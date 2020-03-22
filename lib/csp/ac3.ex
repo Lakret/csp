@@ -4,6 +4,21 @@ defmodule Csp.AC3 do
   """
   alias Csp.Constraint
 
+  @doc """
+  Tries to solve `csp` with AC-3 algorithm, applying node and arc consistency.
+
+  Returns a tuple `{status, csp}`.
+
+  The returned `csp` will possibly have reduced `domains`.
+
+  If all variables have domain length of 1, we found a solution (`:solved` status is returned).
+
+  If any variable has a domain length of 0, we proved that `csp` is not solvable,
+  and `:no_solution` status is returned.
+
+  If neither of those conditions is true, `:reduced` status is returend, irrespective of
+  any actual domain reduction occuring.
+  """
   @spec solve(Csp.t()) :: Csp.solver_result()
   def solve(csp) do
     csp = solve(csp, csp.constraints)
@@ -15,9 +30,11 @@ defmodule Csp.AC3 do
   # Helpers
 
   @spec solve(Csp.t(), [Constriant.t()]) :: Csp.t()
-  def solve(csp, [] = _constraint), do: csp
+  defp solve(csp, constraints)
 
-  def solve(csp, [constraint | rest]) do
+  defp solve(csp, [] = _constraint), do: csp
+
+  defp solve(csp, [constraint | rest]) do
     case Constraint.arguments(constraint) do
       # node consistency for unary constraints
       [variable] ->
@@ -28,25 +45,21 @@ defmodule Csp.AC3 do
             Constraint.satisfies?(constraint, %{variable => value})
           end)
 
-        if length(reduced_domain) < original_domain do
-          csp = %{csp | domains: Map.put(csp.domains, variable, reduced_domain)}
+        {csp, affected_dependents} =
+          apply_domain_reduction(csp, constraint, variable, original_domain, reduced_domain)
 
-          dependent_constraints =
-            Csp.constraints_on(csp, variable)
-            |> List.delete(constraint)
+        constraints =
+          case affected_dependents do
+            [] -> rest
+            _ -> Enum.uniq(rest ++ affected_dependents)
+          end
 
-          constraints = Enum.uniq(rest ++ dependent_constraints)
-          solve(csp, constraints)
-        else
-          solve(csp, rest)
-        end
+        solve(csp, constraints)
 
       # arc consistency for binary constraints
       [x, y] ->
         {csp, constraints_to_consider_from_x} = enforce_arc_consistency(csp, constraint, x, y)
-        IO.inspect(constraints_to_consider_from_x, label: :constraints_to_consider_from_x)
         {csp, constraints_to_consider_from_y} = enforce_arc_consistency(csp, constraint, y, x)
-        IO.inspect(constraints_to_consider_from_y, label: :constraints_to_consider_from_y)
 
         constraints =
           Enum.uniq(rest ++ constraints_to_consider_from_x ++ constraints_to_consider_from_y)
@@ -58,9 +71,9 @@ defmodule Csp.AC3 do
     end
   end
 
-  def enforce_arc_consistency(csp, constraint, x, y) do
-    IO.inspect({x, y}, label: :enforce_arc_consistency)
-
+  @spec enforce_arc_consistency(Csp.t(), Constraint.t(), Csp.variable(), Csp.variable()) ::
+          {Csp.t(), [Constraint.t()]}
+  defp enforce_arc_consistency(csp, constraint, x, y) do
     x_original_domain = Map.fetch!(csp.domains, x)
     y_original_domain = Map.fetch!(csp.domains, y)
 
@@ -71,21 +84,32 @@ defmodule Csp.AC3 do
         end)
       end)
 
-    if length(x_reduced_domain) < length(x_original_domain) do
-      csp = %{csp | domains: Map.put(csp.domains, x, x_reduced_domain)}
+    apply_domain_reduction(csp, constraint, x, x_original_domain, x_reduced_domain)
+  end
 
-      dependent_constraints =
-        Csp.constraints_on(csp, x)
+  @spec apply_domain_reduction(
+          Csp.t(),
+          Constraint.t(),
+          Csp.variable(),
+          Csp.domain(),
+          Csp.domain()
+        ) :: {Csp.t(), [Constraint.t()]}
+  defp apply_domain_reduction(csp, constraint, variable, original_domain, reduced_domain) do
+    if length(reduced_domain) < length(original_domain) do
+      csp = %{csp | domains: Map.put(csp.domains, variable, reduced_domain)}
+
+      affected_dependents =
+        Csp.constraints_on(csp, variable)
         |> List.delete(constraint)
 
-      {csp, dependent_constraints}
+      {csp, affected_dependents}
     else
       {csp, []}
     end
   end
 
   @spec analyze(Csp.t()) :: Csp.solver_status()
-  def analyze(csp) do
+  defp analyze(csp) do
     Enum.reduce_while(csp.domains, :solved, fn {_variable, domain}, status ->
       case length(domain) do
         0 -> {:halt, :no_solution}
