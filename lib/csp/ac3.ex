@@ -29,7 +29,7 @@ defmodule Csp.AC3 do
 
   # Helpers
 
-  @spec solve(Csp.t(), [Constriant.t()]) :: Csp.t()
+  @spec solve(Csp.t(), [constraint :: any()]) :: Csp.t()
   defp solve(csp, constraints)
 
   defp solve(csp, [] = _constraint), do: csp

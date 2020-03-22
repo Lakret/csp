@@ -37,12 +37,12 @@ defmodule Csp do
 
     if ac3 do
       case AC3.solve(csp) do
-        # brute force will just construct the solution if `:solved`, and search for it if `:reduced`.
+        # brute force will just construct the solution if `:solved`, and search for it if `:reduced`
         {status, csp} when status in [:solved, :reduced] -> Searcher.brute_force(csp, opts)
         {:no_solution, _} -> :no_solution
       end
     else
-      Searcher.brute_force(csp)
+      Searcher.brute_force(csp, opts)
     end
   end
 
