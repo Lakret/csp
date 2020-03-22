@@ -67,9 +67,6 @@ defmodule Csp do
 
   # Example problems
 
-  # X = 2, Y = 4
-  # X = 8, Y = doesn't exist
-
   @doc """
   Returns an example Csp struct for the following problem:
 
