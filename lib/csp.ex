@@ -26,14 +26,6 @@ defmodule CSP do
     Enum.all?(constraints, &Constraint.satisfies?(&1, assignment))
   end
 
-  # TODO: report first violated constraint when checking for solution
-  # TODO: before stream: basic Rustler installation to test speed difference
-  # TODO:
-  #   - cryptarithmetic example
-  #   - sudoku
-  #   - AC-3
-  #   - backtracking
-
   @doc """
   Returns an instance of a constraint satisfaction problem
   for map coloring of Australia.
