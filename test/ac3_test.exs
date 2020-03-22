@@ -28,4 +28,18 @@ defmodule Csp.AC3Test do
     assert reduced_csp.variables == csp.variables
     assert reduced_csp.constraints == csp.constraints
   end
+
+  test "arc consistency is enforced" do
+    csp = Csp.squares_csp()
+
+    {:reduced, reduced_csp} = AC3.solve(csp)
+
+    assert reduced_csp.domains == %{
+             x: [0, 1, 2, 3],
+             y: [0, 1, 4, 9]
+           }
+
+    assert reduced_csp.variables == csp.variables
+    assert reduced_csp.constraints == csp.constraints
+  end
 end

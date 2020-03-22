@@ -25,6 +25,4 @@ csp-*.tar
 # VS Code
 /.elixir_ls/
 /.vscode/
-
-# Escript
-csp
+notes.exs
