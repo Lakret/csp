@@ -4,21 +4,21 @@ defmodule CspTest do
   alias Csp.Problems
 
   test "squares CSP is well-defined" do
-    csp = Problems.squares_csp()
+    csp = Problems.squares()
 
     assert Csp.solved?(csp, %{x: 2, y: 4})
     assert !Csp.solved?(csp, %{x: 2, y: 3})
   end
 
   test "map-coloring CSP is well-defined" do
-    csp = Problems.map_coloring_csp()
+    csp = Problems.map_coloring()
 
     assert Csp.solved?(csp, Problems.map_coloring_example_solution())
     assert !Csp.solved?(csp, Problems.map_coloring_wrong_solution())
   end
 
   test "solver works" do
-    csp = Problems.squares_csp()
+    csp = Problems.squares()
 
     {:solved, solution} = Csp.solve(csp)
     assert Csp.solved?(csp, solution)

@@ -31,7 +31,7 @@ defmodule Csp.AC3Test do
   end
 
   test "arc consistency is enforced" do
-    csp = Problems.squares_csp()
+    csp = Problems.squares()
 
     {:reduced, reduced_csp} = AC3.solve(csp)
 
