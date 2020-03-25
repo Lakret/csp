@@ -10,14 +10,18 @@ defmodule Csp.Problems do
 
   ```
   Y = X ^ 2
-  where X, Y are digits
+  where X, Y are >= 0 and <= `max_value`
   ```
+
+  `max_value` defaults to 9.
   """
-  @spec squares() :: Csp.t()
-  def squares() do
+  @spec squares(non_neg_integer()) :: Csp.t()
+  def squares(max_value \\ 9) do
+    domain = Enum.to_list(0..max_value)
+
     %Csp{
       variables: [:x, :y],
-      domains: %{x: digit_domain_from_zero(), y: digit_domain_from_zero()},
+      domains: %{x: domain, y: domain},
       constraints: [
         {[:x, :y], fn x, y -> y == x * x end}
       ]
