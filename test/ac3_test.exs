@@ -2,6 +2,7 @@ defmodule Csp.AC3Test do
   use ExUnit.Case
 
   alias Csp.AC3
+  alias Csp.Problems
 
   test "node consistency is enforced" do
     digit_domain = Enum.to_list(0..9)
@@ -30,7 +31,7 @@ defmodule Csp.AC3Test do
   end
 
   test "arc consistency is enforced" do
-    csp = Csp.squares_csp()
+    csp = Problems.squares_csp()
 
     {:reduced, reduced_csp} = AC3.solve(csp)
 
