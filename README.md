@@ -20,7 +20,15 @@ Currently implemented solvers:
 
 - AC-3
 - brute-force search
+- simple backtracking search
 
-**Future plans:** 9 queens, Backtracking, combine Backtracking and AC-3; parallel version; solver UI, Rust module
+**Future plans:** 
 
-**Possible:** PC-2
+- Backtracking with custom ordering, value selection, and inference AC-3 passes
+- 9 queens trial
+- parallel version
+
+**Possible:** 
+
+- PC-2
+- solver UI, native Rust module speed comparision

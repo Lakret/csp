@@ -24,6 +24,7 @@ defmodule Csp.CLI do
     IO.puts("Select a trial problem (type `1`, `2`, ...), or terminate (type `q`):")
     IO.puts("\t1. Sudoku")
     IO.puts("\t2. Squares")
+    IO.puts("\t3. Map coloring")
     IO.puts("\tq. Exit")
 
     problem = IO.read(:line) |> String.trim()
@@ -34,6 +35,7 @@ defmodule Csp.CLI do
           case problem do
             1 -> trial_sudoku_problem()
             2 -> trial_squares_problem()
+            3 -> trial_map_coloring_problem()
           end
 
         unexpected ->
@@ -90,9 +92,7 @@ defmodule Csp.CLI do
     csp = Problems.squares(max_value)
 
     IO.puts("Original CSP (note variables' domains!):\n#{inspect(csp)}\n")
-
     IO.puts("We will need to supplement AC-3 with brute-force search to solve it.")
-
     IO.puts("Do you want to run AC-3 before doing brute force search? (y/n)")
 
     run_ac3 = IO.read(:line) |> String.trim()
@@ -123,6 +123,29 @@ defmodule Csp.CLI do
 
     solution_string =
       Enum.map(solutions, fn solution -> "\t#{inspect(solution)}" end) |> Enum.join("\n")
+
+    IO.puts(solution_string)
+    IO.puts("")
+
+    trial_problem_selection()
+  end
+
+  def trial_map_coloring_problem() do
+    IO.puts("Let's solve map coloring problem for Austrialian states with backtracking search.\n")
+
+    csp = Problems.map_coloring()
+    IO.puts("CSP is defined like this:\n#{inspect(csp)}\n\n")
+
+    IO.puts("Running backtracking...")
+    {time, {:solved, solutions}} = :timer.tc(fn -> Searcher.backtrack(csp, all: true) end)
+
+    IO.puts(
+      "Backtracking run took #{time / 1_000_000} seconds, " <>
+        "and found the following solutions:\n"
+    )
+
+    solution_string =
+      Enum.map(solutions, fn solution -> "\t#{inspect(solution)}\n" end) |> Enum.join("")
 
     IO.puts(solution_string)
     IO.puts("")

@@ -70,8 +70,14 @@ defmodule Csp.Searcher do
         future_result = backtrack(candidate_assignment, rest, csp, all)
 
         case future_result do
-          [] -> {:cont, acc}
-          [solution] -> if all, do: {:cont, [solution | acc]}, else: {:halt, [solution]}
+          [] ->
+            {:cont, acc}
+
+          [solution] ->
+            if all, do: {:cont, [solution | acc]}, else: {:halt, [solution]}
+
+          solutions when is_list(solutions) ->
+            if all, do: {:cont, acc ++ solutions}, else: {:halt, solutions}
         end
       else
         {:cont, acc}
