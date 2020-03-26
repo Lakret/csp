@@ -3,6 +3,8 @@ defmodule Csp.Searcher do
   Search strategies for CSP.
   """
 
+  @type search_result :: {:solved, Csp.assignment() | [Csp.assignment()]} | :no_solution
+
   @doc """
   Performs a brute force search on `csp`.
 
@@ -14,8 +16,7 @@ defmodule Csp.Searcher do
   so only the first found solution is returned. If `all` is true, all solutions are found,
   and instead of returning a single `assignment`, returns a list of `assignments`.
   """
-  @spec brute_force(Csp.t(), Keyword.t()) ::
-          {:solved, Csp.assignment() | [Csp.assignment()]} | :no_solution
+  @spec brute_force(Csp.t(), Keyword.t()) :: search_result()
   def brute_force(%Csp{} = csp, opts \\ []) do
     all = Keyword.get(opts, :all, false)
 
@@ -33,6 +34,49 @@ defmodule Csp.Searcher do
     else
       {:solved, solution_or_solutions}
     end
+  end
+
+  @doc """
+  Simple backtracking implementation.
+
+  Results & opts the same as in `brute_force/2`.
+  """
+  @spec backtrack(Csp.t(), Keyword.t()) :: search_result()
+  def backtrack(%Csp{} = csp, opts \\ []) do
+    all = Keyword.get(opts, :all, false)
+
+    solutions = backtrack(%{}, csp.variables, csp, all)
+
+    case solutions do
+      [] -> :no_solution
+      solutions when is_list(solutions) -> {:solved, solutions}
+    end
+  end
+
+  @spec backtrack(Csp.assignment(), [Csp.variable()], Csp.t(), boolean()) :: [Csp.assignment()]
+  def backtrack(assignment, unassigned_variables, csp, all)
+
+  def backtrack(assignment, [] = _unassigned, _csp, _all), do: [assignment]
+
+  def backtrack(assignment, [unassigned_variable | rest], csp, all) do
+    # TODO: select_unassigned_variable and order_domain_values
+    domain = Map.fetch!(csp.domains, unassigned_variable)
+
+    Enum.reduce_while(domain, [], fn value, acc ->
+      candidate_assignment = Map.put(assignment, unassigned_variable, value)
+
+      if Csp.consistent?(csp, candidate_assignment) do
+        # TODO: inferences
+        future_result = backtrack(candidate_assignment, rest, csp, all)
+
+        case future_result do
+          [] -> {:cont, acc}
+          [solution] -> if all, do: {:cont, [solution | acc]}, else: {:halt, [solution]}
+        end
+      else
+        {:cont, acc}
+      end
+    end)
   end
 
   @doc """

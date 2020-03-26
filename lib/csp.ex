@@ -64,4 +64,24 @@ defmodule Csp do
       variable in Constraint.arguments(constraint)
     end)
   end
+
+  @doc """
+  Checks if (possibly partial) `assignment` satisfies all constraints in `csp`,
+  for which it has enough assigned variables.
+  """
+  @spec consistent?(t(), assignment) :: boolean()
+  def consistent?(csp, assignment) do
+    assigned_variables = Map.keys(assignment) |> MapSet.new()
+
+    Enum.all?(csp.constraints, fn constraint ->
+      arguments = Constraint.arguments(constraint)
+
+      if Enum.all?(arguments, fn arg -> arg in assigned_variables end) do
+        Constraint.satisfies?(constraint, assignment)
+      else
+        # if we don't have all required assignments to check the constraint, skip it
+        true
+      end
+    end)
+  end
 end
