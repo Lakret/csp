@@ -9,7 +9,7 @@ defprotocol Csp.Constraint do
 end
 
 defimpl Csp.Constraint, for: Tuple do
-  @type t :: {arguments :: [Csp.variable()], test_fun :: (any -> boolean)}
+  @type t :: {arguments :: [Csp.variable()], test_fun :: ([any] -> boolean)}
 
   @spec arguments(t) :: [Csp.variable()]
   def arguments({arguments, _test_fun}) when is_list(arguments), do: arguments

@@ -207,13 +207,20 @@ defmodule Csp.Problems do
   Returns an instance of [N-queens problem](https://en.wikipedia.org/wiki/Eight_queens_puzzle)
   for the specified `n`.
 
+  The second argument determines the way we constraint the number of queens that we require to be placed
+  on the board:
+
+  - `true` (default) will use 8 row constraints, saying that each row should have exactly one queen
+  - `false` will use a global constraint on all cells, saying that we should have exactly `n` queens.
+
+  They are semantically equivalent, but may lead to different performance for solvers. Perhaps counterintuitevely,
+  at least for backtracking it's easier to solve the problem with row-based placement constraints
+  (even though we have more constraints in total), since we find inconsistencies earlier.
+
   The variables in the returned CSP are cell coordinates (0-indexed, `{row, column}`);
   domains are boolean (`true` if a queen is placed in the corresponding cell).
 
-  Note that our implementation of AC3 cannot be run on this problem, since we have a non-binary constraint
-  that specifies that we should have n queens placed on the board in total.
-
-  Thus, to solve this, we suggest running the following:
+  To solve this, we suggest running the following:
 
   ```elixir
   alias Csp.{Problems, Searcher}
@@ -223,7 +230,7 @@ defmodule Csp.Problems do
   ```
   """
   @spec nqueens(non_neg_integer()) :: Csp.t()
-  def nqueens(n \\ 8) when is_integer(n) do
+  def nqueens(n \\ 8, use_row_placement_constraints \\ true) when is_integer(n) do
     cells = for row <- 0..(n - 1), column <- 0..(n - 1), do: {row, column}
 
     # `true` means that a queen is placed in the corresponding cell;
@@ -236,16 +243,10 @@ defmodule Csp.Problems do
     # it shouldn't be present in `another_cell`.
     make_constraint = fn curr_cell, another_cell ->
       {[curr_cell, another_cell],
-       fn queen_in_curr_cell, queen_in_same_row_cell ->
+       fn [queen_in_curr_cell, queen_in_same_row_cell] ->
          if queen_in_curr_cell, do: !queen_in_same_row_cell, else: true
        end}
     end
-
-    # TODO: we need to model constraint saying that we should have n queens placed on the board;
-    # macro solution didn't work, because Erlang doesn't allow for anonymous functions with more than 20 arguments
-    # cell_variables = for {row, column} <- cells, do: Macro.var(:"cell_#{row}_#{column}", nil)
-    # count_queens_predicate_ast = {:fn, [], [{:->, [], [cell_variables, true]}]}
-    # queens_count_constraint = {cells,}
 
     constraints =
       for {curr_row, curr_column} = curr_cell <- cells do
@@ -273,6 +274,24 @@ defmodule Csp.Problems do
       end
       |> List.flatten()
 
+    constraints =
+      if use_row_placement_constraints do
+            # replacement for global N queens placement constraint:
+        # checks that for each row we have exactly one queen placed
+        row_placement_constraints =
+          for row <- 0..(n - 1) do
+            row_cells = for column <- 0..(n - 1), do: {row, column}
+
+            {row_cells, fn row_cell_values -> Enum.count(row_cell_values, & &1) == 1 end}
+          end
+
+        row_placement_constraints ++ constraints
+      else
+        # global constraint checking that we placed N queens on the board
+        n_queens_should_be_placed_constraint = {cells, fn cell_values -> Enum.count(cell_values, & &1) ==  n end}
+        [n_queens_should_be_placed_constraint | constraints]
+      end
+
     %Csp{
       variables: cells,
       domains: domains,
@@ -280,18 +299,23 @@ defmodule Csp.Problems do
     }
   end
 
+  @doc """
+  Pretty-prints an N Queens problem solution represented as cell assignments.
+  """
+  @spec pretty_print_nqueens(Csp.assignment(), non_neg_integer()) :: :ok
   def pretty_print_nqueens(assignment, n \\ 8) do
     for row <- 0..(n - 1) do
       cells =
         for column <- 0..(n - 1) do
           if assignment[{row, column}] do
-            "Q"
+            "|Q|"
           else
-            "□"
+            "| |"
           end
         end
 
       IO.puts(Enum.join(cells))
     end
+    :ok
   end
 end

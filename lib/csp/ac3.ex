@@ -7,15 +7,14 @@ defmodule Csp.AC3 do
   @doc """
   Tries to solve `csp` with AC-3 algorithm, applying node and arc consistency.
 
+  Only considers unary and binary constraints; will skip n-ary constraints where n > 2.
+
   Returns a tuple `{status, csp}`.
 
   The returned `csp` will possibly have reduced `domains`.
-
   If all variables have domain length of 1, we found a solution (`:solved` status is returned).
-
   If any variable has a domain length of 0, we proved that `csp` is not solvable,
   and `:no_solution` status is returned.
-
   If neither of those conditions is true, `:reduced` status is returend, irrespective of
   any actual domain reduction occuring.
   """
@@ -66,8 +65,9 @@ defmodule Csp.AC3 do
 
         solve(csp, constraints)
 
+      # don't attempt to solve for higher arity constraints for now
       k_ary when is_list(k_ary) ->
-        raise ArgumentError, "#{length(k_ary)}-ary constraints are not yet supported!"
+        csp
     end
   end
 

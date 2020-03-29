@@ -25,6 +25,7 @@ defmodule Csp.CLI do
     IO.puts("\t1. Sudoku")
     IO.puts("\t2. Squares")
     IO.puts("\t3. Map coloring")
+    IO.puts("\t4. N queens")
     IO.puts("\tq. Exit")
 
     problem = IO.read(:line) |> String.trim()
@@ -36,6 +37,7 @@ defmodule Csp.CLI do
             1 -> trial_sudoku_problem()
             2 -> trial_squares_problem()
             3 -> trial_map_coloring_problem()
+            4 -> trial_n_queens_problem()
           end
 
         unexpected ->
@@ -137,7 +139,9 @@ defmodule Csp.CLI do
     IO.puts("CSP is defined like this:\n#{inspect(csp)}\n\n")
 
     IO.puts("Running backtracking...")
-    {time, {:solved, solutions}} = :timer.tc(fn -> Searcher.backtrack(csp, all: true) end)
+
+    {time, {:solved, solutions}} =
+      :timer.tc(fn -> Searcher.backtrack(csp, all: true, ac3_preprocess: false) end)
 
     IO.puts(
       "Backtracking run took #{time / 1_000_000} seconds, " <>
@@ -149,6 +153,47 @@ defmodule Csp.CLI do
 
     IO.puts(solution_string)
     IO.puts("")
+
+    trial_problem_selection()
+  end
+
+  def trial_n_queens_problem() do
+    IO.puts(
+      "Let's solve N Queens problem with backtracking, " <>
+        "and see how constriant selection affects performance.\n"
+    )
+
+    IO.puts("Select N:")
+    n = IO.read(:line) |> String.trim()
+    {n, ""} = Integer.parse(n)
+
+    IO.puts("Do you want to use:\n")
+
+    IO.puts(
+      "\t1. Global queen placement constraint\n" <>
+        "\t\t- specifies that we want to have 8 queens placed in total; will be slower"
+    )
+
+    IO.puts(
+      "\t2. Row-based queen placement constraint\n" <>
+        "\t\t- specifies that we want to have 1 queen in each row; will be faster, though semantically the same"
+    )
+
+    IO.puts("\nType 1 or 2:")
+
+    placement_constraint_type = IO.read(:line) |> String.trim()
+    {placement_constraint_type, ""} = Integer.parse(placement_constraint_type)
+
+    csp = Problems.nqueens(n, placement_constraint_type == 2)
+    IO.puts("Generated CSP with #{length(csp.constraints)} constraints.")
+    IO.puts("Solving...")
+
+    {time, {:solved, [solution]}} =
+      :timer.tc(fn -> Searcher.backtrack(csp, ac3_preprocess: false) end)
+
+    IO.puts("Solved in #{inspect(time / 1_000_000)} seconds:\n")
+    Problems.pretty_print_nqueens(solution, n)
+    IO.puts("\n")
 
     trial_problem_selection()
   end
