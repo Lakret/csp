@@ -44,8 +44,9 @@ defmodule Csp.Searcher do
   @spec backtrack(Csp.t(), Keyword.t()) :: search_result()
   def backtrack(%Csp{} = csp, opts \\ []) do
     all = Keyword.get(opts, :all, false)
+    select_unassigned_variable = Keyword.get(opts, :select_unassigned_variable, :take_head)
 
-    solutions = backtrack(%{}, csp.variables, csp, all)
+    solutions = backtrack(%{}, csp.variables, csp, select_unassigned_variable, all)
 
     case solutions do
       [] -> :no_solution
@@ -53,13 +54,45 @@ defmodule Csp.Searcher do
     end
   end
 
-  @spec backtrack(Csp.assignment(), [Csp.variable()], Csp.t(), boolean()) :: [Csp.assignment()]
-  def backtrack(assignment, unassigned_variables, csp, all)
+  @type select_unassigned_variable ::
+          :take_head | ([Csp.variable()] -> {Csp.variable(), [Csp.variable()]})
 
-  def backtrack(assignment, [] = _unassigned, _csp, _all), do: [assignment]
+  @spec backtrack(
+          Csp.assignment(),
+          [Csp.variable()],
+          Csp.t(),
+          select_unassigned_variable,
+          boolean()
+        ) :: [Csp.assignment()]
+  def backtrack(assignment, unassigned_variables, csp, select_unassigned_variable, all)
 
-  def backtrack(assignment, [unassigned_variable | rest], csp, all) do
-    # TODO: select_unassigned_variable and order_domain_values
+  def backtrack(assignment, [] = _unassigned, _csp, _select_unassigned_variable, _all),
+    do: [assignment]
+
+  def backtrack(assignment, [unassigned_variable | rest], csp, :take_head, all) do
+    backtrack_variable_selected(assignment, {unassigned_variable, rest}, csp, :take_head, all)
+  end
+
+  def backtrack(assignment, unassigned_variables, csp, select_unassigned_variable, all) do
+    {unassigned_variable, rest} = select_unassigned_variable.(unassigned_variables)
+
+    backtrack_variable_selected(
+      assignment,
+      {unassigned_variable, rest},
+      csp,
+      select_unassigned_variable,
+      all
+    )
+  end
+
+  defp backtrack_variable_selected(
+         assignment,
+         {unassigned_variable, rest},
+         csp,
+         select_unassigned_variable,
+         all
+       ) do
+    # TODO: order_domain_values
     domain = Map.fetch!(csp.domains, unassigned_variable)
 
     Enum.reduce_while(domain, [], fn value, acc ->
@@ -67,7 +100,8 @@ defmodule Csp.Searcher do
 
       if Csp.consistent?(csp, candidate_assignment) do
         # TODO: inferences
-        future_result = backtrack(candidate_assignment, rest, csp, all)
+        future_result =
+          backtrack(candidate_assignment, rest, csp, select_unassigned_variable, all)
 
         case future_result do
           [] ->
