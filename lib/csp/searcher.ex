@@ -2,6 +2,9 @@ defmodule Csp.Searcher do
   @moduledoc """
   Search strategies for CSP.
   """
+  require Logger
+
+  alias Csp.AC3
 
   @type search_result :: {:solved, Csp.assignment() | [Csp.assignment()]} | :no_solution
 
@@ -39,79 +42,152 @@ defmodule Csp.Searcher do
   @doc """
   Simple backtracking implementation.
 
-  Results & opts the same as in `brute_force/2`.
+  Results are the same as in `brute_force/2`.
+
+  The following `opts` are supported:
+
+  - `all`, boolean, `false` by default: if only first, or all variables should be returned.
+  - `ac3_preprocess`, boolean, `true` by default: runs AC3 before doing backtracking once.
+  - `ac3`, boolean, `false` by default: if AC3 runs should be performed during each backtracking step.
+  - `variable_selector`, either `:take_head` (default), `:minimum_remaining_values`
+  (will select the variable with the least values remaining in the domain as the next candidate to consider),
+  or a function accepting a list of unassigned variables, and returning a tuple
+  of a variable we should consider next and a rest of the unassigned variables list.
   """
   @spec backtrack(Csp.t(), Keyword.t()) :: search_result()
   def backtrack(%Csp{} = csp, opts \\ []) do
     all = Keyword.get(opts, :all, false)
-    select_unassigned_variable = Keyword.get(opts, :select_unassigned_variable, :take_head)
+    ac3_preprocess = Keyword.get(opts, :ac3_preprocess, true)
+    run_ac3 = Keyword.get(opts, :ac3, false)
+    variable_selector = Keyword.get(opts, :variable_selector, :take_head)
 
-    solutions = backtrack(%{}, csp.variables, csp, select_unassigned_variable, all)
+    {halt?, csp} =
+      if ac3_preprocess do
+        case AC3.solve(csp) do
+          {:no_solution, csp} -> {true, csp}
+          {status, csp} when status in [:solved, :reduced] -> {false, csp}
+        end
+      else
+        {false, csp}
+      end
 
-    case solutions do
-      [] -> :no_solution
-      solutions when is_list(solutions) -> {:solved, solutions}
+    if halt? do
+      :no_solution
+    else
+      solutions = backtrack(%{}, csp.variables, csp, variable_selector, run_ac3, all)
+
+      case solutions do
+        [] -> :no_solution
+        solutions when is_list(solutions) -> {:solved, solutions}
+      end
     end
   end
 
-  @type select_unassigned_variable ::
-          :take_head | ([Csp.variable()] -> {Csp.variable(), [Csp.variable()]})
+  @type variable_selector :: :take_head | ([Csp.variable()] -> {Csp.variable(), [Csp.variable()]})
 
   @spec backtrack(
           Csp.assignment(),
           [Csp.variable()],
           Csp.t(),
-          select_unassigned_variable,
+          variable_selector,
+          boolean(),
           boolean()
-        ) :: [Csp.assignment()]
-  def backtrack(assignment, unassigned_variables, csp, select_unassigned_variable, all)
+        ) ::
+          [Csp.assignment()]
+  defp backtrack(assignment, unassigned_variables, csp, variable_selector, run_ac3, all)
 
-  def backtrack(assignment, [] = _unassigned, _csp, _select_unassigned_variable, _all),
+  defp backtrack(assignment, [] = _unassigned, _csp, _variable_selector, _run_ac3, _all),
     do: [assignment]
 
-  def backtrack(assignment, [unassigned_variable | rest], csp, :take_head, all) do
-    backtrack_variable_selected(assignment, {unassigned_variable, rest}, csp, :take_head, all)
+  defp backtrack(assignment, [unassigned_variable | rest], csp, :take_head, run_ac3, all) do
+    backtrack_variable_selected(
+      assignment,
+      {unassigned_variable, rest},
+      csp,
+      :take_head,
+      run_ac3,
+      all
+    )
   end
 
-  def backtrack(assignment, unassigned_variables, csp, select_unassigned_variable, all) do
-    {unassigned_variable, rest} = select_unassigned_variable.(unassigned_variables)
+  defp backtrack(assignment, unassigned_variables, csp, :minimum_remaining_values, run_ac3, all) do
+    {min_domain_values_variable, _domain} =
+      Map.take(csp.domains, unassigned_variables)
+      |> Enum.map(fn {variable, domain} ->
+        {variable, length(domain)}
+      end)
+      |> Enum.min(fn {_, domain_length}, {_, domain_length2} ->
+        domain_length <= domain_length2
+      end)
+
+    {unassigned_variable, rest} =
+      {min_domain_values_variable, List.delete(unassigned_variables, min_domain_values_variable)}
 
     backtrack_variable_selected(
       assignment,
       {unassigned_variable, rest},
       csp,
-      select_unassigned_variable,
+      :minimum_remaining_values,
+      run_ac3,
       all
     )
   end
+
+  defp backtrack(assignment, unassigned_variables, csp, variable_selector, run_ac3, all) do
+    {unassigned_variable, rest} = variable_selector.(unassigned_variables)
+
+    backtrack_variable_selected(
+      assignment,
+      {unassigned_variable, rest},
+      csp,
+      variable_selector,
+      run_ac3,
+      all
+    )
+  end
+
+  # TODO: order_domain_values less constraining variable heuristic
 
   defp backtrack_variable_selected(
          assignment,
          {unassigned_variable, rest},
          csp,
-         select_unassigned_variable,
+         variable_selector,
+         run_ac3,
          all
        ) do
-    # TODO: order_domain_values
     domain = Map.fetch!(csp.domains, unassigned_variable)
 
     Enum.reduce_while(domain, [], fn value, acc ->
       candidate_assignment = Map.put(assignment, unassigned_variable, value)
 
       if Csp.consistent?(csp, candidate_assignment) do
-        # TODO: inferences
-        future_result =
-          backtrack(candidate_assignment, rest, csp, select_unassigned_variable, all)
+        {inconsistent, csp} =
+          if run_ac3 do
+            case AC3.solve(csp) do
+              {:no_solution, csp} -> {true, csp}
+              {status, csp} when status in [:solved, :reduced] -> {false, csp}
+            end
+          else
+            {false, csp}
+          end
 
-        case future_result do
-          [] ->
-            {:cont, acc}
+        if inconsistent do
+          {:cont, acc}
+        else
+          future_result =
+            backtrack(candidate_assignment, rest, csp, variable_selector, run_ac3, all)
 
-          [solution] ->
-            if all, do: {:cont, [solution | acc]}, else: {:halt, [solution]}
+          case future_result do
+            [] ->
+              {:cont, acc}
 
-          solutions when is_list(solutions) ->
-            if all, do: {:cont, acc ++ solutions}, else: {:halt, solutions}
+            [solution] ->
+              if all, do: {:cont, [solution | acc]}, else: {:halt, [solution]}
+
+            solutions when is_list(solutions) ->
+              if all, do: {:cont, acc ++ solutions}, else: {:halt, solutions}
+          end
         end
       else
         {:cont, acc}
