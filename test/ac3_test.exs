@@ -14,8 +14,8 @@ defmodule Csp.AC3Test do
         y: digit_domain
       },
       constraints: [
-        {[:x], fn x -> x <= 7 end},
-        {[:y], fn y -> y > 3 end}
+        {[:x], fn [x] -> x <= 7 end},
+        {[:y], fn [y] -> y > 3 end}
       ]
     }
 

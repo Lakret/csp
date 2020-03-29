@@ -12,7 +12,12 @@ defmodule Csp.Constraints do
   def all_different_constraints(variables)
 
   def all_different_constraints([variable | rest]) do
-    constraints = Enum.map(rest, fn another_variable -> {[variable, another_variable], &!=/2} end)
+    constraints =
+      Enum.map(rest, fn another_variable ->
+        {[variable, another_variable],
+         fn [variable, another_variable] -> variable != another_variable end}
+      end)
+
     constraints ++ all_different_constraints(rest)
   end
 

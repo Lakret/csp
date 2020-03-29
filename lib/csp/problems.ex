@@ -5,6 +5,10 @@ defmodule Csp.Problems do
   import Csp.Domains
   import Csp.Constraints
 
+  ################################
+  ## Squares
+  ################################
+
   @doc """
   Returns an example Csp struct for the following problem:
 
@@ -23,10 +27,14 @@ defmodule Csp.Problems do
       variables: [:x, :y],
       domains: %{x: domain, y: domain},
       constraints: [
-        {[:x, :y], fn x, y -> y == x * x end}
+        {[:x, :y], fn [x, y] -> y == x * x end}
       ]
     }
   end
+
+  ################################
+  ## Sudoku
+  ################################
 
   @type sudoku_cells_map :: %{{row :: 0..8, column :: 0..8} => 1..9}
 
@@ -68,7 +76,7 @@ defmodule Csp.Problems do
 
     prefilled_constraints =
       Enum.map(prefilled, fn {cell, value} ->
-        {[cell], fn x -> x == value end}
+        {[cell], fn [x] -> x == value end}
       end)
 
     constraints =
@@ -144,9 +152,13 @@ defmodule Csp.Problems do
     :ok
   end
 
+  ################################
+  ## Map coloring
+  ################################
+
   @doc """
   Returns an instance of a constraint satisfaction problem
-  for map coloring of Australia.
+  for [map coloring](https://en.wikipedia.org/wiki/Map_coloring) of Australian states.
   """
   @spec map_coloring() :: Csp.t()
   def map_coloring() do
@@ -165,7 +177,8 @@ defmodule Csp.Problems do
       [:NSW, :V]
     ]
 
-    constraints = Enum.map(inequalities, fn args -> {args, &!=/2} end)
+    constraints =
+      Enum.map(inequalities, fn args -> {args, fn [state1, state2] -> state1 != state2 end} end)
 
     %Csp{variables: states, domains: domains, constraints: constraints}
   end
@@ -184,5 +197,101 @@ defmodule Csp.Problems do
   @spec map_coloring_wrong_solution :: Csp.assignment()
   def map_coloring_wrong_solution() do
     %{WA: :green, NT: :red, Q: :red, NSW: :green, V: :red, SA: :blue, T: :red}
+  end
+
+  ################################
+  ## N Queens
+  ################################
+
+  @doc """
+  Returns an instance of [N-queens problem](https://en.wikipedia.org/wiki/Eight_queens_puzzle)
+  for the specified `n`.
+
+  The variables in the returned CSP are cell coordinates (0-indexed, `{row, column}`);
+  domains are boolean (`true` if a queen is placed in the corresponding cell).
+
+  Note that our implementation of AC3 cannot be run on this problem, since we have a non-binary constraint
+  that specifies that we should have n queens placed on the board in total.
+
+  Thus, to solve this, we suggest running the following:
+
+  ```elixir
+  alias Csp.{Problems, Searcher}
+
+  queens8 = nqueens()
+  Searcher.backtrack(queens8, ac3_preprocess: false)
+  ```
+  """
+  @spec nqueens(non_neg_integer()) :: Csp.t()
+  def nqueens(n \\ 8) when is_integer(n) do
+    cells = for row <- 0..(n - 1), column <- 0..(n - 1), do: {row, column}
+
+    # `true` means that a queen is placed in the corresponding cell;
+    # `false` - that the cell is empty
+    domains =
+      Enum.map(cells, fn cell -> {cell, boolean_domain()} end)
+      |> Enum.into(%{})
+
+    # creates the following constraint: if queen is present in `curr_cell`,
+    # it shouldn't be present in `another_cell`.
+    make_constraint = fn curr_cell, another_cell ->
+      {[curr_cell, another_cell],
+       fn queen_in_curr_cell, queen_in_same_row_cell ->
+         if queen_in_curr_cell, do: !queen_in_same_row_cell, else: true
+       end}
+    end
+
+    # TODO: we need to model constraint saying that we should have n queens placed on the board;
+    # macro solution didn't work, because Erlang doesn't allow for anonymous functions with more than 20 arguments
+    # cell_variables = for {row, column} <- cells, do: Macro.var(:"cell_#{row}_#{column}", nil)
+    # count_queens_predicate_ast = {:fn, [], [{:->, [], [cell_variables, true]}]}
+    # queens_count_constraint = {cells,}
+
+    constraints =
+      for {curr_row, curr_column} = curr_cell <- cells do
+        [
+          # same row constraints
+          for column <- 0..(n - 1), column != curr_column do
+            make_constraint.(curr_cell, {curr_row, column})
+          end,
+
+          # same column constraints
+          for row <- 0..(n - 1), row != curr_row do
+            make_constraint.(curr_cell, {row, curr_column})
+          end,
+
+          # same diagonals constraints
+          for(
+            row <- 0..(n - 1),
+            column <- 0..(n - 1),
+            row != curr_row,
+            column != curr_column,
+            abs(row - curr_row) == abs(column - curr_column),
+            do: make_constraint.(curr_cell, {row, column})
+          )
+        ]
+      end
+      |> List.flatten()
+
+    %Csp{
+      variables: cells,
+      domains: domains,
+      constraints: constraints
+    }
+  end
+
+  def pretty_print_nqueens(assignment, n \\ 8) do
+    for row <- 0..(n - 1) do
+      cells =
+        for column <- 0..(n - 1) do
+          if assignment[{row, column}] do
+            "Q"
+          else
+            "□"
+          end
+        end
+
+      IO.puts(Enum.join(cells))
+    end
   end
 end

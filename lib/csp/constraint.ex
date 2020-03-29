@@ -18,6 +18,6 @@ defimpl Csp.Constraint, for: Tuple do
   def satisfies?({arguments, test_fun}, assignment) do
     actual_arguments = Enum.map(arguments, &Map.fetch!(assignment, &1))
 
-    apply(test_fun, actual_arguments)
+    apply(test_fun, [actual_arguments])
   end
 end
