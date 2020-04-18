@@ -5,6 +5,8 @@ defmodule Csp.Problems do
   import Csp.Domains
   import Csp.Constraints
 
+  alias IO.ANSI
+
   ################################
   ## Squares
   ################################
@@ -276,7 +278,7 @@ defmodule Csp.Problems do
 
     constraints =
       if use_row_placement_constraints do
-            # replacement for global N queens placement constraint:
+        # replacement for global N queens placement constraint:
         # checks that for each row we have exactly one queen placed
         row_placement_constraints =
           for row <- 0..(n - 1) do
@@ -288,7 +290,9 @@ defmodule Csp.Problems do
         row_placement_constraints ++ constraints
       else
         # global constraint checking that we placed N queens on the board
-        n_queens_should_be_placed_constraint = {cells, fn cell_values -> Enum.count(cell_values, & &1) ==  n end}
+        n_queens_should_be_placed_constraint =
+          {cells, fn cell_values -> Enum.count(cell_values, & &1) == n end}
+
         [n_queens_should_be_placed_constraint | constraints]
       end
 
@@ -304,18 +308,29 @@ defmodule Csp.Problems do
   """
   @spec pretty_print_nqueens(Csp.assignment(), non_neg_integer()) :: :ok
   def pretty_print_nqueens(assignment, n \\ 8) do
-    for row <- 0..(n - 1) do
+    black_to_white = Stream.cycle([:black, :white])
+
+    for {row, color} <- 0..(n - 1) |> Enum.zip(black_to_white) do
+      reverse_color = if color == :black, do: :white, else: :black
+      black_to_white = Stream.cycle([color, reverse_color])
+
       cells =
-        for column <- 0..(n - 1) do
+        for {column, color} <- 0..(n - 1) |> Enum.zip(black_to_white) do
+          background =
+            if color == :black,
+              do: ANSI.light_yellow_background(),
+              else: ANSI.default_background()
+
           if assignment[{row, column}] do
-            "|Q|"
+            "#{background} Q #{ANSI.reset()}"
           else
-            "| |"
+            "#{background}   #{ANSI.reset()}"
           end
         end
 
       IO.puts(Enum.join(cells))
     end
+
     :ok
   end
 end
