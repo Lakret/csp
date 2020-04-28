@@ -11,7 +11,7 @@ path = "src/bin.rs"
 [lib]
 name = "csp_nif"
 path = "src/lib.rs"
-crate-type = ["dylib"]
+crate-type = ["rlib", "dylib"]
 
 [dependencies]
 rustler = "0.21.0"
