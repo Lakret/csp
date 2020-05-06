@@ -67,7 +67,7 @@ defmodule Csp.AC3 do
 
       # don't attempt to solve for higher arity constraints for now
       k_ary when is_list(k_ary) ->
-        csp
+        solve(csp, rest)
     end
   end
 
