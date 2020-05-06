@@ -1,5 +1,17 @@
 # NIF for Elixir.CSP.NIF
 
+## Compiling on macOS
+
+Add this text to `native/csp_nif/.cargo/config` file:
+
+```
+[target.x86_64-apple-darwin]
+rustflags = [
+  "-C", "link-arg=-undefined",
+  "-C", "link-arg=dynamic_lookup",
+]
+```
+
 ## To build the NIF module:
 
 - Make sure your projects `mix.exs` has the `:rustler` compiler listed in the `project` function: `compilers: [:rustler] ++ Mix.compilers()` If there already is a `:compilers` list, you should append `:rustler` to it.

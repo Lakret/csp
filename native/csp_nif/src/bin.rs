@@ -3,7 +3,7 @@ use std::error::Error;
 use std::collections::HashMap;
 
 // extern crate csp_nif;
-use csp_nif::*;
+use csp_nif::csp::*;
 
 fn main() -> Result<(), Box<dyn Error>> {
   let mut input = String::new();
