@@ -6,11 +6,6 @@ use std::collections::HashMap;
 use csp_nif::csp::*;
 
 fn main() -> Result<(), Box<dyn Error>> {
-  let mut input = String::new();
-  std::io::stdin().read_line(&mut input).unwrap();
-
-  println!("Input = {}", input);
-
   let variables = vec!["x".to_string(), "y".to_string()];
   let mut domains = HashMap::new();
   domains.insert("x".to_string(), 0..10);
@@ -22,5 +17,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     domains,
     constraints: vec![constraint],
   };
+
+  println!("csp = {:?}", csp);
+
   Ok(())
 }

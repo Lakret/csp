@@ -19,6 +19,7 @@ use std::collections::HashMap;
 
 type Variable = String;
 
+#[derive(Debug)]
 pub struct Csp<D, C>
 where
   D: Domain,
@@ -51,6 +52,14 @@ pub struct UnaryConstraint<Value>(pub Vec<Variable>, pub Box<dyn Fn(Value) -> bo
 pub struct BinaryConstraint<Value>(pub Vec<Variable>, pub Box<dyn Fn(Value, Value) -> bool>);
 pub struct EqualityConstraint<Value>(pub Vec<Variable>, pub Value);
 pub struct InequalityConstraint<Value>(pub Vec<Variable>, pub Value);
+
+use std::fmt;
+
+impl<Value> fmt::Debug for BinaryConstraint<Value> {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    f.debug_tuple("BinaryConstraint").field(&self.0).finish()
+  }
+}
 
 // TODO: implement
 impl<Value> Constraint<Value> for UnaryConstraint<Value> {}
