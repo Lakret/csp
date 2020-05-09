@@ -9,8 +9,7 @@ defmodule Csp.MixProject do
       start_permanent: Mix.env() == :prod,
       escript: [main_module: Csp.CLI],
       deps: deps(),
-      compilers: [:rustler] ++ Mix.compilers(),
-      rustler_crates: [csp_nif: []]
+      compilers: Mix.compilers()
     ]
   end
 

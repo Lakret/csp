@@ -7,7 +7,7 @@ It accompanies [this Twitch stream](https://www.twitch.tv/videos/572863390).
 You can test it by building and running an escript:
 
 ```bash
-mix escript.build
+mix deps.get && mix escript.build
 ./csp
 ```
 
