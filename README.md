@@ -7,7 +7,8 @@ It accompanies [this Twitch stream](https://www.twitch.tv/videos/572863390).
 You can test it by building and running an escript:
 
 ```bash
-mix deps.get && mix escript.build
+mix deps.get
+MIX_ENV=prod mix escript.build
 ./csp
 ```
 
@@ -69,6 +70,5 @@ naïve, minimum remaining values, and custom)
 - Parallel solvers
 - More examples
 - Possibly:
-  - Rust NIF for speeding up algorithms
   - PC-2
-  - Bounds propogation
+  - Bounds propagation
