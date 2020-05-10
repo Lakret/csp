@@ -2,7 +2,7 @@
 
 This is a basic implementation of constraint satisfaction problem solver algorithms and some example problems in Elixir.
 
-It accompanies [this Twitch stream](https://www.twitch.tv/videos/572863390).
+It has accompaying [Youtube video](https://www.youtube.com/watch?v=ao1CO8_V5do) and [Twitch stream](https://www.twitch.tv/videos/572863390).
 
 You can test it by building and running an escript:
 
