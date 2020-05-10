@@ -308,7 +308,7 @@ defmodule Csp.Problems do
   """
   @spec pretty_print_nqueens(Csp.assignment(), non_neg_integer()) :: :ok
   def pretty_print_nqueens(assignment, n \\ 8) do
-    black_to_white = Stream.cycle([:black, :white])
+    black_to_white = Stream.cycle([:white, :black])
 
     for {row, color} <- 0..(n - 1) |> Enum.zip(black_to_white) do
       reverse_color = if color == :black, do: :white, else: :black
