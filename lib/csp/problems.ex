@@ -245,8 +245,8 @@ defmodule Csp.Problems do
     # it shouldn't be present in `another_cell`.
     make_constraint = fn curr_cell, another_cell ->
       {[curr_cell, another_cell],
-       fn [queen_in_curr_cell, queen_in_same_row_cell] ->
-         if queen_in_curr_cell, do: !queen_in_same_row_cell, else: true
+       fn [cell_occupancy, another_cell_occupancy] ->
+         if cell_occupancy, do: !another_cell_occupancy, else: true
        end}
     end
 
@@ -283,8 +283,7 @@ defmodule Csp.Problems do
         row_placement_constraints =
           for row <- 0..(n - 1) do
             row_cells = for column <- 0..(n - 1), do: {row, column}
-
-            {row_cells, fn row_cell_values -> Enum.count(row_cell_values, & &1) == 1 end}
+            {row_cells, fn row_occupancy -> Enum.count(row_occupancy, & &1) == 1 end}
           end
 
         row_placement_constraints ++ constraints
