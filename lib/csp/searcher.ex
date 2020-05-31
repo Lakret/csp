@@ -164,8 +164,10 @@ defmodule Csp.Searcher do
       if Csp.consistent?(csp, candidate_assignment) do
         {inconsistent, csp} =
           if run_ac3 do
+            # TODO: refactor to behave like AC3.reduce in slides
             case AC3.solve(csp) do
               {:no_solution, csp} -> {true, csp}
+              # TODO: add inferred values to assigned
               {status, csp} when status in [:solved, :reduced] -> {false, csp}
             end
           else

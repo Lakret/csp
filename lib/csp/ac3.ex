@@ -26,6 +26,22 @@ defmodule Csp.AC3 do
     {status, csp}
   end
 
+  @doc """
+  Reduces the `csp` with AC-3.
+
+  Accepts `csp` with `assignment` (map from variables to their assigned values),
+  and a list of `unassigned` variables.
+
+  Returns `:no_solution` if an inconsistency is detected, or a tuple of
+  `{:ok, csp, assignment, unassigned}`, where domains of `csp` are reduced,
+  `assignment` is amended with inferred variable assignments, and
+  `unassigned` list is updated to reflect those assignment changes.
+  """
+  @spec reduce(Csp.t(), Csp.assignment(), [Csp.variable()]) ::
+          {:ok, Csp.t(), Csp.assignment(), [Csp.variable()]} | :no_solution
+  def reduce(csp, assignment, unassigned) do
+  end
+
   # Helpers
 
   @spec solve(Csp.t(), [constraint :: any()]) :: Csp.t()
