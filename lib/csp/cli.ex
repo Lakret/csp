@@ -184,12 +184,16 @@ defmodule Csp.CLI do
     placement_constraint_type = IO.read(:line) |> String.trim()
     {placement_constraint_type, ""} = Integer.parse(placement_constraint_type)
 
+    IO.puts("Enable AC-3 (y/n)?:")
+    ac3 = IO.read(:line) |> String.trim()
+    ac3 = ac3 == "y"
+
     csp = Problems.nqueens(n, placement_constraint_type == 2)
     IO.puts("Generated CSP with #{length(csp.constraints)} constraints.")
     IO.puts("Solving...")
 
     {time, {:solved, [solution]}} =
-      :timer.tc(fn -> Searcher.backtrack(csp, ac3_preprocess: false) end)
+      :timer.tc(fn -> Searcher.backtrack(csp, ac3: ac3, ac3_preprocess: false) end)
 
     IO.puts("Solved in #{inspect(time / 1_000_000)} seconds:\n")
     Problems.pretty_print_nqueens(solution, n)

@@ -150,35 +150,32 @@ defmodule Csp.Searcher do
 
   defp backtrack_variable_selected(
          assignment,
-         {unassigned_variable, rest},
+         {variable, unassigned},
          csp,
          variable_selector,
          run_ac3,
          all
        ) do
-    domain = Map.fetch!(csp.domains, unassigned_variable)
+    domain = Map.fetch!(csp.domains, variable)
 
     Enum.reduce_while(domain, [], fn value, acc ->
-      candidate_assignment = Map.put(assignment, unassigned_variable, value)
+      assignment = Map.put(assignment, variable, value)
 
-      if Csp.consistent?(csp, candidate_assignment) do
-        {inconsistent, csp} =
+      if Csp.consistent?(csp, assignment) do
+        {inconsistent, csp, assignment, unassigned} =
           if run_ac3 do
-            # TODO: refactor to behave like AC3.reduce in slides
-            case AC3.solve(csp) do
-              {:no_solution, csp} -> {true, csp}
-              # TODO: add inferred values to assigned
-              {status, csp} when status in [:solved, :reduced] -> {false, csp}
+            case AC3.reduce(csp, assignment, unassigned) do
+              {:ok, csp, assignment, unassigned} -> {false, csp, assignment, unassigned}
+              :no_solution -> {true, csp, assignment, unassigned}
             end
           else
-            {false, csp}
+            {false, csp, assignment, unassigned}
           end
 
         if inconsistent do
           {:cont, acc}
         else
-          future_result =
-            backtrack(candidate_assignment, rest, csp, variable_selector, run_ac3, all)
+          future_result = backtrack(assignment, unassigned, csp, variable_selector, run_ac3, all)
 
           case future_result do
             [] ->
