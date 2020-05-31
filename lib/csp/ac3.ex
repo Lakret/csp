@@ -32,6 +32,10 @@ defmodule Csp.AC3 do
   Accepts `csp` with `assignment` (map from variables to their assigned values),
   and a list of `unassigned` variables.
 
+  Compared to `solve/2`, apart from tracking the assignment, it also uses
+  simplified version of domain reduction for constraint: it doesn't attempt
+  to track affected constraints when reducing some constraint's domain.
+
   Returns `:no_solution` if an inconsistency is detected, or a tuple of
   `{:ok, csp, assignment, unassigned}`, where domains of `csp` are reduced,
   `assignment` is amended with inferred variable assignments, and
@@ -63,49 +67,19 @@ defmodule Csp.AC3 do
             :no_solution
 
           _ ->
-            {csp, assignment, unassigned, remaining_constraints} =
-              apply_domain_reduction2(
-                csp,
-                variable,
-                constraint,
-                remaining_constraints,
-                assignment,
-                unassigned,
-                reduced_domain
-              )
+            {csp, assignment, unassigned} =
+              apply_domain_reduction2(csp, variable, assignment, unassigned, reduced_domain)
 
             reduce(csp, assignment, unassigned, remaining_constraints)
         end
 
       # arc consistency for binary constraints
       [x, y] ->
-        {csp, assignment, unassigned, affected_constraints_from_x} =
-          enforce_arc_consistency2(
-            csp,
-            constraint,
-            remaining_constraints,
-            assignment,
-            unassigned,
-            x,
-            y
-          )
+        {csp, assignment, unassigned} =
+          enforce_arc_consistency2(csp, constraint, assignment, unassigned, x, y)
 
-        {csp, assignment, unassigned, affected_constraints_from_y} =
-          enforce_arc_consistency2(
-            csp,
-            constraint,
-            remaining_constraints,
-            assignment,
-            unassigned,
-            y,
-            x
-          )
-
-        remaining_constraints =
-          Enum.uniq(
-            remaining_constraints ++
-              affected_constraints_from_x ++ affected_constraints_from_y
-          )
+        {csp, assignment, unassigned} =
+          enforce_arc_consistency2(csp, constraint, assignment, unassigned, y, x)
 
         reduce(csp, assignment, unassigned, remaining_constraints)
 
@@ -118,8 +92,6 @@ defmodule Csp.AC3 do
   defp apply_domain_reduction2(
          csp,
          variable,
-         constraint,
-         remaining_constriants,
          assignment,
          unassigned,
          reduced_domain
@@ -130,29 +102,22 @@ defmodule Csp.AC3 do
     if domain_length < length(original_domain) do
       csp = %{csp | domains: Map.put(csp.domains, variable, reduced_domain)}
 
-      affected_dependents =
-        Csp.constraints_on(csp, variable)
-        |> List.delete(constraint)
-
-      remaining_constriants = Enum.uniq(remaining_constriants ++ affected_dependents)
-
       if domain_length == 1 do
         assignment = Map.put(assignment, variable, hd(reduced_domain))
         unassigned = List.delete(unassigned, variable)
 
-        {csp, assignment, unassigned, remaining_constriants}
+        {csp, assignment, unassigned}
       else
-        {csp, assignment, unassigned, remaining_constriants}
+        {csp, assignment, unassigned}
       end
     else
-      {csp, assignment, unassigned, remaining_constriants}
+      {csp, assignment, unassigned}
     end
   end
 
   defp enforce_arc_consistency2(
          csp,
          constraint,
-         remaining_constriants,
          assignment,
          unassigned,
          x,
@@ -171,8 +136,6 @@ defmodule Csp.AC3 do
     apply_domain_reduction2(
       csp,
       x,
-      constraint,
-      remaining_constriants,
       assignment,
       unassigned,
       x_reduced_domain
