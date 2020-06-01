@@ -303,6 +303,47 @@ defmodule Csp.Problems do
   end
 
   @doc """
+  TODO:
+  """
+  @spec nqueens_via_positions(non_neg_integer()) :: Csp.t()
+  def nqueens_via_positions(n \\ 8) when is_integer(n) do
+    # Each variable in the number of a row where a queen should be placed
+    variables = Enum.to_list(1..n)
+
+    # domain is a 1-indexed column for each of the queens (row number is equal to the variable)
+    domains =
+      Enum.map(variables, fn row_idx -> {row_idx, Enum.to_list(1..n)} end) |> Enum.into(%{})
+
+    # Constraints
+    # - each queen should occupy it's own row - automatically provided by the variables selection
+
+    # - each queen should occupy it's own column - all_different on the variables
+    column_constraints = Csp.Constraints.all_different_constraints(variables)
+
+    # - each queen should occupy it's own major (left-to-right) diagonal
+    major_diagonal_constraints =
+      for row1 <- 1..n, row2 <- 1..n, row1 != row2 do
+        {[row1, row2], fn [column1, column2] -> row1 - column1 != row2 - column2 end}
+      end
+
+    # - each queen should occupy it's own minor (right-to-left) diagonal
+    minor_diagonal_constraints =
+      for row1 <- 1..n, row2 <- 1..n, row1 != row2 do
+        {[row1, row2], fn [column1, column2] -> row1 + column1 != row2 + column2 end}
+      end
+
+    constraints = column_constraints ++ major_diagonal_constraints ++ minor_diagonal_constraints
+
+    %Csp{variables: variables, domains: domains, constraints: constraints}
+  end
+
+  def pretty_print_nqueens_via_positions(assignment, n \\ 8) do
+    Enum.map(assignment, fn {row, column} -> {{row - 1, column - 1}, true} end)
+    |> Enum.into(%{})
+    |> pretty_print_nqueens(n)
+  end
+
+  @doc """
   Pretty-prints an N Queens problem solution represented as cell assignments.
   """
   @spec pretty_print_nqueens(Csp.assignment(), non_neg_integer()) :: :ok
