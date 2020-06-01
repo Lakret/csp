@@ -1,8 +1,14 @@
 defmodule Csp.AC3 do
   @moduledoc """
   Pure AC-3 algorithm implementation.
+
+  Also provides `reduce/3` helper that can be used as an inference part of search algorithms.
   """
   alias Csp.Constraint
+
+  @type unassigned :: [Csp.variable()]
+  @type domain_reduction :: {Csp.t(), Csp.assignment(), unassigned()}
+  @type reduce_result :: {:ok, Csp.t(), Csp.assignment(), unassigned()} | :no_solution
 
   @doc """
   Tries to solve `csp` with AC-3 algorithm, applying node and arc consistency.
@@ -41,106 +47,12 @@ defmodule Csp.AC3 do
   `assignment` is amended with inferred variable assignments, and
   `unassigned` list is updated to reflect those assignment changes.
   """
-  @spec reduce(Csp.t(), Csp.assignment(), [Csp.variable()]) ::
-          {:ok, Csp.t(), Csp.assignment(), [Csp.variable()]} | :no_solution
+  @spec reduce(Csp.t(), Csp.assignment(), unassigned()) :: reduce_result()
   def reduce(csp, assignment, unassigned) do
     reduce(csp, assignment, unassigned, csp.constraints)
   end
 
-  # Helpers
-
-  defp reduce(csp, assignment, unassigned, []), do: {:ok, csp, assignment, unassigned}
-
-  defp reduce(csp, assignment, unassigned, [constraint | remaining_constraints]) do
-    case Constraint.arguments(constraint) do
-      # node consistency for unary constraints
-      [variable] ->
-        original_domain = Map.fetch!(csp.domains, variable)
-
-        reduced_domain =
-          Enum.filter(original_domain, fn value ->
-            Constraint.satisfies?(constraint, %{variable => value})
-          end)
-
-        case reduced_domain do
-          [] ->
-            :no_solution
-
-          _ ->
-            {csp, assignment, unassigned} =
-              apply_domain_reduction2(csp, variable, assignment, unassigned, reduced_domain)
-
-            reduce(csp, assignment, unassigned, remaining_constraints)
-        end
-
-      # arc consistency for binary constraints
-      [x, y] ->
-        {csp, assignment, unassigned} =
-          enforce_arc_consistency2(csp, constraint, assignment, unassigned, x, y)
-
-        {csp, assignment, unassigned} =
-          enforce_arc_consistency2(csp, constraint, assignment, unassigned, y, x)
-
-        reduce(csp, assignment, unassigned, remaining_constraints)
-
-      # skip higher arity constraints
-      k_ary when is_list(k_ary) ->
-        reduce(csp, assignment, unassigned, remaining_constraints)
-    end
-  end
-
-  defp apply_domain_reduction2(
-         csp,
-         variable,
-         assignment,
-         unassigned,
-         reduced_domain
-       ) do
-    original_domain = Map.fetch!(csp.domains, variable)
-    domain_length = length(reduced_domain)
-
-    if domain_length < length(original_domain) do
-      csp = %{csp | domains: Map.put(csp.domains, variable, reduced_domain)}
-
-      if domain_length == 1 do
-        assignment = Map.put(assignment, variable, hd(reduced_domain))
-        unassigned = List.delete(unassigned, variable)
-
-        {csp, assignment, unassigned}
-      else
-        {csp, assignment, unassigned}
-      end
-    else
-      {csp, assignment, unassigned}
-    end
-  end
-
-  defp enforce_arc_consistency2(
-         csp,
-         constraint,
-         assignment,
-         unassigned,
-         x,
-         y
-       ) do
-    x_original_domain = Map.fetch!(csp.domains, x)
-    y_original_domain = Map.fetch!(csp.domains, y)
-
-    x_reduced_domain =
-      Enum.filter(x_original_domain, fn x_value ->
-        Enum.any?(y_original_domain, fn y_value ->
-          Constraint.satisfies?(constraint, %{x => x_value, y => y_value})
-        end)
-      end)
-
-    apply_domain_reduction2(
-      csp,
-      x,
-      assignment,
-      unassigned,
-      x_reduced_domain
-    )
-  end
+  ## Helpers
 
   @spec solve(Csp.t(), [constraint :: any()]) :: Csp.t()
   defp solve(csp, constraints)
@@ -159,7 +71,7 @@ defmodule Csp.AC3 do
           end)
 
         {csp, affected_dependents} =
-          apply_domain_reduction(csp, constraint, variable, original_domain, reduced_domain)
+          reduce_domain(csp, constraint, variable, original_domain, reduced_domain)
 
         constraints =
           case affected_dependents do
@@ -198,17 +110,12 @@ defmodule Csp.AC3 do
         end)
       end)
 
-    apply_domain_reduction(csp, constraint, x, x_original_domain, x_reduced_domain)
+    reduce_domain(csp, constraint, x, x_original_domain, x_reduced_domain)
   end
 
-  @spec apply_domain_reduction(
-          Csp.t(),
-          Constraint.t(),
-          Csp.variable(),
-          Csp.domain(),
-          Csp.domain()
-        ) :: {Csp.t(), [Constraint.t()]}
-  defp apply_domain_reduction(csp, constraint, variable, original_domain, reduced_domain) do
+  @spec reduce_domain(Csp.t(), Constraint.t(), Csp.variable(), Csp.domain(), Csp.domain()) ::
+          {Csp.t(), [Constraint.t()]}
+  defp reduce_domain(csp, constraint, variable, original_domain, reduced_domain) do
     if length(reduced_domain) < length(original_domain) do
       csp = %{csp | domains: Map.put(csp.domains, variable, reduced_domain)}
 
@@ -231,5 +138,97 @@ defmodule Csp.AC3 do
         _ -> {:halt, :reduced}
       end
     end)
+  end
+
+  @spec reduce(Csp.t(), Csp.assignment(), unassigned(), [Csp.constraint()]) :: reduce_result()
+  defp reduce(csp, assignment, unassigned, constraints)
+
+  defp reduce(csp, assignment, unassigned, []), do: {:ok, csp, assignment, unassigned}
+
+  defp reduce(csp, assignment, unassigned, [constraint | remaining_constraints]) do
+    case Constraint.arguments(constraint) do
+      # node consistency for unary constraints
+      [variable] ->
+        original_domain = Map.fetch!(csp.domains, variable)
+
+        reduced_domain =
+          Enum.filter(original_domain, fn value ->
+            Constraint.satisfies?(constraint, %{variable => value})
+          end)
+
+        case reduced_domain do
+          [] ->
+            :no_solution
+
+          _ ->
+            {csp, assignment, unassigned} =
+              reduce_domain_and_assign(csp, variable, assignment, unassigned, reduced_domain)
+
+            reduce(csp, assignment, unassigned, remaining_constraints)
+        end
+
+      # arc consistency for binary constraints
+      [x, y] ->
+        {csp, assignment, unassigned} =
+          enforce_arc_consistency_and_assign(csp, constraint, assignment, unassigned, x, y)
+
+        {csp, assignment, unassigned} =
+          enforce_arc_consistency_and_assign(csp, constraint, assignment, unassigned, y, x)
+
+        reduce(csp, assignment, unassigned, remaining_constraints)
+
+      # skip higher arity constraints
+      k_ary when is_list(k_ary) ->
+        reduce(csp, assignment, unassigned, remaining_constraints)
+    end
+  end
+
+  @spec reduce_domain_and_assign(
+          Csp.t(),
+          Csp.variable(),
+          Csp.assignment(),
+          unassigned(),
+          Csp.domain()
+        ) :: domain_reduction()
+  defp reduce_domain_and_assign(csp, variable, assignment, unassigned, reduced_domain) do
+    original_domain = Map.fetch!(csp.domains, variable)
+    domain_length = length(reduced_domain)
+
+    if domain_length < length(original_domain) do
+      csp = %{csp | domains: Map.put(csp.domains, variable, reduced_domain)}
+
+      if domain_length == 1 do
+        assignment = Map.put(assignment, variable, hd(reduced_domain))
+        unassigned = List.delete(unassigned, variable)
+
+        {csp, assignment, unassigned}
+      else
+        {csp, assignment, unassigned}
+      end
+    else
+      {csp, assignment, unassigned}
+    end
+  end
+
+  @spec enforce_arc_consistency_and_assign(
+          Csp.t(),
+          Csp.constraint(),
+          Csp.assignment(),
+          unassigned(),
+          Csp.variable(),
+          Csp.variable()
+        ) :: domain_reduction()
+  defp enforce_arc_consistency_and_assign(csp, constraint, assignment, unassigned, x, y) do
+    x_original_domain = Map.fetch!(csp.domains, x)
+    y_original_domain = Map.fetch!(csp.domains, y)
+
+    x_reduced_domain =
+      Enum.filter(x_original_domain, fn x_value ->
+        Enum.any?(y_original_domain, fn y_value ->
+          Constraint.satisfies?(constraint, %{x => x_value, y => y_value})
+        end)
+      end)
+
+    reduce_domain_and_assign(csp, x, assignment, unassigned, x_reduced_domain)
   end
 end
