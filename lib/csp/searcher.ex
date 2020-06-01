@@ -47,7 +47,7 @@ defmodule Csp.Searcher do
   The following `opts` are supported:
 
   - `all`, boolean, `false` by default: if only first, or all variables should be returned.
-  - `ac3_preprocess`, boolean, `true` by default: runs AC3 before doing backtracking once.
+  - `ac3_preprocess`, boolean, `false` by default: runs AC3 before doing backtracking once.
   - `ac3`, boolean, `false` by default: if AC3 runs should be performed during each backtracking step.
   - `variable_selector`, either `:take_head` (default), `:minimum_remaining_values`
   (will select the variable with the least values remaining in the domain as the next candidate to consider),
@@ -57,7 +57,7 @@ defmodule Csp.Searcher do
   @spec backtrack(Csp.t(), Keyword.t()) :: search_result()
   def backtrack(%Csp{} = csp, opts \\ []) do
     all = Keyword.get(opts, :all, false)
-    ac3_preprocess = Keyword.get(opts, :ac3_preprocess, true)
+    ac3_preprocess = Keyword.get(opts, :ac3_preprocess, false)
     run_ac3 = Keyword.get(opts, :ac3, false)
     variable_selector = Keyword.get(opts, :variable_selector, :take_head)
 
