@@ -31,6 +31,7 @@ defmodule Csp do
 
   Any additional options will be passed to `Searcher.brute_force/1`.
   """
+  # TODO: make it use backtracking and pass options to it
   @spec solve(Csp.t(), Keyword.t()) :: :no_solution | {:solved, assignment() | [assignment()]}
   def solve(%__MODULE__{} = csp, opts \\ []) do
     ac3 = Keyword.get(opts, :ac3, true)
@@ -82,6 +83,42 @@ defmodule Csp do
         # if we don't have all required assignments to check the constraint, skip it
         true
       end
+    end)
+  end
+
+  @doc """
+  Returns a list of variables from `assignmnet` that violate constraints in `csp`.
+  """
+  @spec conflicted(t(), assignment()) :: [variable()]
+  def conflicted(csp, assignmnet) do
+    Map.keys(assignmnet)
+    |> Enum.filter(fn variable ->
+      constraints_on(csp, variable)
+      |> Enum.any?(fn constraint -> !Constraint.satisfies?(constraint, assignmnet) end)
+    end)
+  end
+
+  @doc """
+  Returns a count of conflicts with `assignment` in `csp`,
+  i.e. constraints that the `assignment breaks.
+  """
+  @spec count_conflicts(t(), assignment()) :: non_neg_integer()
+  def count_conflicts(csp, assignment) do
+    Enum.count(csp.constraints, fn constraint ->
+      !Constraint.satisfies?(constraint, assignment)
+    end)
+  end
+
+  @doc """
+  Returns a `value` for `variable` that will produce the minimal number of conflicts
+  in `csp` with `assignment`.
+  """
+  @spec min_conflicts_value!(t(), variable(), assignment()) :: value()
+  def min_conflicts_value!(csp, variable, assignment) do
+    Map.fetch!(csp.domains, variable)
+    |> Enum.min_by(fn value ->
+      assignment = Map.put(assignment, variable, value)
+      count_conflicts(csp, assignment)
     end)
   end
 end
