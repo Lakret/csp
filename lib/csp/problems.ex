@@ -277,7 +277,7 @@ defmodule Csp.Problems do
   alias Csp.{Problems, Searcher}
 
   queens8 = nqueens_slow()
-  Searcher.backtrack(queens8, ac3_preprocess: false)
+  Searcher.backtrack(queens8)
   ```
   """
   @spec nqueens_slow(non_neg_integer()) :: Csp.t()

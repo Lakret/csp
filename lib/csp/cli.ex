@@ -140,8 +140,7 @@ defmodule Csp.CLI do
 
     IO.puts("Running backtracking...")
 
-    {time, {:solved, solutions}} =
-      :timer.tc(fn -> Searcher.backtrack(csp, all: true, ac3_preprocess: false) end)
+    {time, {:solved, solutions}} = :timer.tc(fn -> Searcher.backtrack(csp, all: true) end)
 
     IO.puts(
       "Backtracking run took #{time / 1_000_000} seconds, " <>
@@ -198,8 +197,7 @@ defmodule Csp.CLI do
     IO.puts("Generated CSP with #{length(csp.constraints)} constraints.")
     IO.puts("Solving...")
 
-    {time, {:solved, [solution]}} =
-      :timer.tc(fn -> Searcher.backtrack(csp, ac3: ac3, ac3_preprocess: false) end)
+    {time, {:solved, [solution]}} = :timer.tc(fn -> Searcher.backtrack(csp, ac3: ac3) end)
 
     IO.puts("Solved in #{inspect(time / 1_000_000)} seconds:\n")
 
