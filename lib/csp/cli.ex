@@ -167,28 +167,34 @@ defmodule Csp.CLI do
     n = IO.read(:line) |> String.trim()
     {n, ""} = Integer.parse(n)
 
-    IO.puts("Do you want to use:\n")
-
     IO.puts(
-      "\t1. Global queen placement constraint\n" <>
-        "\t\t- specifies that we want to have 8 queens placed in total; will be slower"
-    )
+      """
 
-    IO.puts(
-      "\t2. Row-based queen placement constraint\n" <>
-        "\t\t- specifies that we want to have 1 queen in each row; will be faster, though semantically the same"
-    )
+      Do you want to use:
 
-    IO.puts("\nType 1 or 2:")
+      \t1. Optimal N Queens CSP representation (fastest)
+      \t2. Row-based queen placement constraint (slower)
+      \t3. Global queen placement constraint (the slowest)
+
+      Type 1, 2, or 3:
+      """
+      |> String.trim_trailing("\n")
+    )
 
     placement_constraint_type = IO.read(:line) |> String.trim()
     {placement_constraint_type, ""} = Integer.parse(placement_constraint_type)
 
-    IO.puts("Enable AC-3 (y/n)?:")
+    IO.puts("\nEnable AC-3 (y/n)?:")
     ac3 = IO.read(:line) |> String.trim()
     ac3 = ac3 == "y"
 
-    csp = Problems.nqueens(n, placement_constraint_type == 2)
+    csp =
+      case placement_constraint_type do
+        1 -> Problems.nqueens(n)
+        2 -> Problems.nqueens_slow(n, true)
+        3 -> Problems.nqueens_slow(n, false)
+      end
+
     IO.puts("Generated CSP with #{length(csp.constraints)} constraints.")
     IO.puts("Solving...")
 
@@ -196,7 +202,12 @@ defmodule Csp.CLI do
       :timer.tc(fn -> Searcher.backtrack(csp, ac3: ac3, ac3_preprocess: false) end)
 
     IO.puts("Solved in #{inspect(time / 1_000_000)} seconds:\n")
-    Problems.pretty_print_nqueens(solution, n)
+
+    case placement_constraint_type do
+      1 -> Problems.pretty_print_nqueens(solution, n)
+      _ -> Problems.pretty_print_nqueens_slow(solution, n)
+    end
+
     IO.puts("\n")
 
     trial_problem_selection()
