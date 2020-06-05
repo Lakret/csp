@@ -121,4 +121,15 @@ defmodule Csp do
       count_conflicts(csp, assignment)
     end)
   end
+
+  @doc """
+  TODO:
+  """
+  def order_by_conflicts(csp, variable, assignment) do
+    Map.fetch!(csp.domains, variable)
+    |> Enum.sort_by(fn value ->
+      assignment = Map.put(assignment, variable, value)
+      count_conflicts(csp, assignment)
+    end)
+  end
 end
