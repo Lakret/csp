@@ -64,6 +64,7 @@ defmodule Csp.MinConflicts do
         else
           # TODO: how to prevent it from cycling non-stop?
           variable = Csp.conflicted(csp, assignment) |> Enum.random()
+
           # |> IO.inspect(label: :variable)
 
           # conflicted_variables = Csp.conflicted(csp, assignment)
@@ -73,13 +74,15 @@ defmodule Csp.MinConflicts do
           # variable = Enum.random(csp.variables) |> IO.inspect(label: :variable)
 
           # value = Csp.min_conflicts_value!(csp, variable, assignment)
-          min_conflicts_value = Csp.min_conflicts_value!(csp, variable, assignment)
+          # min_conflicts_value = Csp.min_conflicts_value!(csp, variable, assignment)
 
           value =
             Csp.order_by_conflicts(csp, variable, assignment)
             |> Enum.find(fn value -> {variable, value} not in tabu end)
 
-          value = value || min_conflicts_value
+          # TODO: decide on tabu logic and fallback if exhausted variables
+          # TODO: tabu depth
+          value = value || Enum.random(csp.domains[variable])
 
           tabu = [{variable, value} | tabu]
 
