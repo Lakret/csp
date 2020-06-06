@@ -1,6 +1,6 @@
 defmodule Csp.Constraints do
   @moduledoc """
-  Defines commonly used constraints & constraint transformations.
+  Defines commonly used constraints.
   """
   alias Csp.Constraint
 

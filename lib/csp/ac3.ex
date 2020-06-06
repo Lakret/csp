@@ -24,7 +24,7 @@ defmodule Csp.AC3 do
   If neither of those conditions is true, `:reduced` status is returend, irrespective of
   any actual domain reduction occuring.
   """
-  @spec solve(Csp.t()) :: Csp.solve_result()
+  @spec solve(Csp.t()) :: {Csp.solver_status(), Csp.t()}
   def solve(csp) do
     csp = solve(csp, csp.constraints)
 

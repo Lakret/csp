@@ -16,9 +16,8 @@ defmodule Csp do
   @type constraint :: (value -> boolean) | (value, value -> boolean)
   @type assignment :: %{variable => value}
 
-  # @type solver_status :: :solved | :reduced | :no_solution
-  # @type solver_result :: {solver_status, t()}
   @type solve_result :: {:solved, assignment() | [assignment()]} | :no_solution
+  @type solver_status :: :solved | :reduced | :no_solution
 
   @type t :: %__MODULE__{
           variables: [atom],
