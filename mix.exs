@@ -35,7 +35,7 @@ defmodule Csp.MixProject do
 
   defp package do
     %{
-      license: ["Apache 2", "MIT"],
+      licenses: ["Apache 2", "MIT"],
       maintainers: ["Dmitry Slutsky"],
       links: %{"GitHub" => "https://github.com/Lakret/csp"}
     }
