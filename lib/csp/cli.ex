@@ -2,7 +2,9 @@ defmodule Csp.CLI do
   @moduledoc """
   Command line interface for constraint satisfaction.
   """
-  alias Csp.{Problems, AC3, Searcher}
+  alias Csp
+  alias Csp.Problems
+  alias Csp.AC3
 
   @doc """
   Usage:
@@ -116,15 +118,14 @@ defmodule Csp.CLI do
   def trial_squares_problem_brute_force_part(csp) do
     IO.puts("Now we can run brute force search.\n")
 
-    {time, {:solved, solutions}} = :timer.tc(fn -> Searcher.brute_force(csp, all: true) end)
+    {time, {:solved, solutions}} = :timer.tc(fn -> Csp.solve(csp, method: :brute_force, all: true) end)
 
     IO.puts(
       "Brute force search run took #{time / 1_000_000} seconds, " <>
         "and found the following solutions:\n"
     )
 
-    solution_string =
-      Enum.map(solutions, fn solution -> "\t#{inspect(solution)}" end) |> Enum.join("\n")
+    solution_string = Enum.map(solutions, fn solution -> "\t#{inspect(solution)}" end) |> Enum.join("\n")
 
     IO.puts(solution_string)
     IO.puts("")
@@ -140,16 +141,14 @@ defmodule Csp.CLI do
 
     IO.puts("Running backtracking...")
 
-    {time, {:solved, solutions}} =
-      :timer.tc(fn -> Searcher.backtrack(csp, all: true, ac3_preprocess: false) end)
+    {time, {:solved, solutions}} = :timer.tc(fn -> Csp.solve(csp, method: :backtracking, all: true) end)
 
     IO.puts(
       "Backtracking run took #{time / 1_000_000} seconds, " <>
         "and found the following solutions:\n"
     )
 
-    solution_string =
-      Enum.map(solutions, fn solution -> "\t#{inspect(solution)}\n" end) |> Enum.join("")
+    solution_string = Enum.map(solutions, fn solution -> "\t#{inspect(solution)}\n" end) |> Enum.join("")
 
     IO.puts(solution_string)
     IO.puts("")
@@ -167,32 +166,46 @@ defmodule Csp.CLI do
     n = IO.read(:line) |> String.trim()
     {n, ""} = Integer.parse(n)
 
-    IO.puts("Do you want to use:\n")
-
     IO.puts(
-      "\t1. Global queen placement constraint\n" <>
-        "\t\t- specifies that we want to have 8 queens placed in total; will be slower"
-    )
+      """
 
-    IO.puts(
-      "\t2. Row-based queen placement constraint\n" <>
-        "\t\t- specifies that we want to have 1 queen in each row; will be faster, though semantically the same"
-    )
+      Do you want to use:
 
-    IO.puts("\nType 1 or 2:")
+      \t1. Optimal N Queens CSP representation (fastest)
+      \t2. Row-based queen placement constraint (slower)
+      \t3. Global queen placement constraint (the slowest)
+
+      Type 1, 2, or 3:
+      """
+      |> String.trim_trailing("\n")
+    )
 
     placement_constraint_type = IO.read(:line) |> String.trim()
     {placement_constraint_type, ""} = Integer.parse(placement_constraint_type)
 
-    csp = Problems.nqueens(n, placement_constraint_type == 2)
+    IO.puts("\nEnable AC-3 (y/n)?:")
+    ac3 = IO.read(:line) |> String.trim()
+    ac3 = ac3 == "y"
+
+    csp =
+      case placement_constraint_type do
+        1 -> Problems.nqueens(n)
+        2 -> Problems.nqueens_slow(n, true)
+        3 -> Problems.nqueens_slow(n, false)
+      end
+
     IO.puts("Generated CSP with #{length(csp.constraints)} constraints.")
     IO.puts("Solving...")
 
-    {time, {:solved, [solution]}} =
-      :timer.tc(fn -> Searcher.backtrack(csp, ac3_preprocess: false) end)
+    {time, {:solved, solution}} = :timer.tc(fn -> Csp.solve(csp, method: :backtracking, ac3: ac3) end)
 
     IO.puts("Solved in #{inspect(time / 1_000_000)} seconds:\n")
-    Problems.pretty_print_nqueens(solution, n)
+
+    case placement_constraint_type do
+      1 -> Problems.pretty_print_nqueens(solution, n)
+      _ -> Problems.pretty_print_nqueens_slow(solution, n)
+    end
+
     IO.puts("\n")
 
     trial_problem_selection()

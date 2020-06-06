@@ -30,3 +30,10 @@ notes.exs
 # Rust
 native/csp_nif/target/
 native/csp_nif/.cargo/
+
+# escript
+csp
+
+# metals & macOS files
+.metals/
+.DS_Store
