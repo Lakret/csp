@@ -1,7 +1,7 @@
 defmodule Csp.MixProject do
   use Mix.Project
 
-  @version "0.0.1"
+  @version "0.1.0"
   @description "Pure Elixir Constraint Satisfaction problem solvers"
 
   def project do
