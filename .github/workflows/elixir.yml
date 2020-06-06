@@ -20,5 +20,13 @@ jobs:
         otp-version: '22.2' # Define the OTP version [required]
     - name: Install Dependencies
       run: mix deps.get
+    - name: Cache dialyzer plt
+      uses: actions/cache@v1
+      with:
+        path: priv/plts
+        key: ${{ runner.os }}-dialyzer-${{ hashFiles('**/mix.lock') }}-${{ hashFiles('**/mix.exs') }}
+        restore-keys: ${{ runner.os }}-dialyzer-${{ hashFiles('**/mix.lock') }}-${{ hashFiles('**/mix.exs') }}
+    - name: Run dialyzer
+      run: mkdir -p priv/plts && mix dialyzer --halt-exit-status
     - name: Run Tests
       run: mix test
