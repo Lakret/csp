@@ -1,59 +1,31 @@
 defmodule Csp.MinConflicts do
   @moduledoc """
-  [Min-conflicts](https://en.wikipedia.org/wiki/Min-conflicts_algorithm) algorithm implementation.
-  """
-
-  # TODO: try tabu search to prevent the min conflicts algorithm to become stuck?
-  # TODO: extract search result here and in backtracking / brute force searches / AC3
-
-  @test """
-  alias Csp.{Problems, MinConflicts, Searcher}
-
-  csp = Problems.nqueens(4)
-  assignment = MinConflicts.solve(csp) |> IO.inspect(label: :assignment)
-  Csp.Problems.pretty_print_nqueens(assignment, 4)
-
-  Csp.conflicted(csp, assignment)
-  Csp.count_conflicts(csp, assignment)
-
-  {:solved, [solution]} = Searcher.backtrack(csp)
-  Csp.conflicted(csp, solution)
-  Csp.count_conflicts(csp, solution)
-
-  MinConflicts.solve(csp) |> Problems.pretty_print_nqueens(4)
-
-
-  csp = Problems.nqueens(3)
-  MinConflicts.solve(csp)
+  [Min-conflicts](https://en.wikipedia.org/wiki/Min-conflicts_algorithm) algorithm implementation,
+  with Tabu search to allow overcoming local minimums.
   """
 
   @doc """
-  TODO:
+  Solves `csp` with min-conflicts algorithm, using tabu search to overcome local minimums.
+
+  ## Options
+
+  Supported `opts`:
+
+    - `:max_iteration` - positive integer, the number of iteration to perform before giving up.
+    Defaults to `10_000`.
+    - `:optimize_initial_state` - boolean, defaults to `false`. If set to `true`, will use a greedy
+    algorithm to set an initial state minimizing the number of conflicts for each variable.
+    - `:tabu_depth` - positive integer or `nil`, defaults to `nil`. If set to an integer,
+    will limit tabu stack depth by the specified integer.
   """
   @spec solve(Csp.t(), Keyword.t()) :: {:solved, Csp.assignment()} | :no_solution
   def solve(csp, opts \\ []) do
     max_iterations = Keyword.get(opts, :max_iterations, 10_000)
-
-    # :rand.seed(:exsss, Time.utc_now() |> Time.to_erl())
-
-    # greedy good initial state generation
-    # assignment =
-    #   Enum.reduce(csp.variables, %{}, fn variable, assignment ->
-    #     value =
-    #       try do
-    #         Csp.min_conflicts_value!(csp, variable, assignment)
-    #       rescue
-    #         KeyError ->
-    #           Map.fetch!(csp.domains, variable) |> Enum.random()
-    #       end
-    #     Map.put(assignment, variable, value)
-    #   end)
+    optimize_initial_state = Keyword.get(opts, :optimize_initial_state, false)
+    tabu_depth = Keyword.get(opts, :tabu_depth)
 
     assignment =
-      Enum.reduce(csp.domains, %{}, fn {variable, values}, assignment ->
-        value = Enum.random(values)
-        Map.put(assignment, variable, value)
-      end)
+      if optimize_initial_state, do: optimized_initial_state(csp), else: random_initial_state(csp)
 
     {status, assignment, _tabu} =
       1..max_iterations
@@ -62,34 +34,51 @@ defmodule Csp.MinConflicts do
         if Csp.consistent?(csp, assignment) do
           {:halt, {:solved, assignment, tabu}}
         else
-          # TODO: how to prevent it from cycling non-stop?
           variable = Csp.conflicted(csp, assignment) |> Enum.random()
-
-          # |> IO.inspect(label: :variable)
-
-          # conflicted_variables = Csp.conflicted(csp, assignment)
-          # random_index = :rand.uniform(length(conflicted_variables)) - 1
-          # variable = Enum.at(conflicted_variables, random_index) |> IO.inspect(label: :variable)
-
-          # variable = Enum.random(csp.variables) |> IO.inspect(label: :variable)
-
-          # value = Csp.min_conflicts_value!(csp, variable, assignment)
-          # min_conflicts_value = Csp.min_conflicts_value!(csp, variable, assignment)
+          random_value = Enum.random(csp.domains[variable])
 
           value =
             Csp.order_by_conflicts(csp, variable, assignment)
-            |> Enum.find(fn value -> {variable, value} not in tabu end)
-
-          # TODO: decide on tabu logic and fallback if exhausted variables
-          # TODO: tabu depth
-          value = value || Enum.random(csp.domains[variable])
+            |> Enum.find(random_value, fn value -> {variable, value} not in tabu end)
 
           tabu = [{variable, value} | tabu]
+
+          tabu =
+            if tabu_depth && length(tabu) > tabu_depth do
+              Enum.take(tabu, tabu_depth)
+            else
+              tabu
+            end
 
           {:cont, {status, Map.put(assignment, variable, value), tabu}}
         end
       end)
 
     if status == :no_solution, do: status, else: {status, assignment}
+  end
+
+  ## Helpers
+
+  @spec random_initial_state(Csp.t()) :: Csp.assignment()
+  defp random_initial_state(%Csp{} = csp) do
+    Enum.reduce(csp.domains, %{}, fn {variable, values}, assignment ->
+      value = Enum.random(values)
+      Map.put(assignment, variable, value)
+    end)
+  end
+
+  @spec optimized_initial_state(Csp.t()) :: Csp.assignment()
+  defp optimized_initial_state(%Csp{} = csp) do
+    Enum.reduce(csp.variables, %{}, fn variable, assignment ->
+      value =
+        try do
+          Csp.min_conflicts_value!(csp, variable, assignment)
+        rescue
+          KeyError ->
+            Map.fetch!(csp.domains, variable) |> Enum.random()
+        end
+
+      Map.put(assignment, variable, value)
+    end)
   end
 end

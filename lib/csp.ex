@@ -22,28 +22,42 @@ defmodule Csp do
   defstruct [:variables, :domains, :constraints]
 
   @doc """
-  Solves a CSP using a combination of AC3 and brute force search.
+  Solves a CSP.
 
   ## Options
 
-  - `ac3`, boolean, defaults to `true`: specifies if AC3 should be used to reduce
-  the domain of variables before performing brute force search.
+  The following `opts` are supported:
 
-  Any additional options will be passed to `Searcher.brute_force/1`.
+  - `method`, can be one of the following:
+    - `:backtracking` - backtracking search, selected by default
+    - `:min_conflicts` - min-conflicts algorithm with tabu search
+    - `:ac3` - AC-3 algorithm followed by backtracking
+    - `:brute_force` - brute-force search.
+
+  You can pass options to backtracking (see `Csp.Backtracking.search/2` docs),
+  min-conflicts (`Csp.MinConflicts.solve/2`), or brute-force (see `Csp.Searcher.brute_force/2`)
+  in this function's `opts`.
   """
-  # TODO: make it use backtracking and pass options to it
   @spec solve(Csp.t(), Keyword.t()) :: :no_solution | {:solved, assignment() | [assignment()]}
   def solve(%__MODULE__{} = csp, opts \\ []) do
-    ac3 = Keyword.get(opts, :ac3, true)
+    method = Keyword.get(opts, :method, :backtracking)
 
-    if ac3 do
-      case AC3.solve(csp) do
-        # brute force will just construct the solution if `:solved`, and search for it if `:reduced`
-        {status, csp} when status in [:solved, :reduced] -> Searcher.brute_force(csp, opts)
-        {:no_solution, _} -> :no_solution
-      end
-    else
-      Searcher.brute_force(csp, opts)
+    case method do
+      :backtracking ->
+        Searcher.backtrack(csp, opts)
+
+      :min_conflicts ->
+        Csp.MinConflicts.solve(csp, opts)
+
+      :brute_force ->
+        Searcher.brute_force(csp, opts)
+
+      :ac3 ->
+        case AC3.solve(csp) do
+          # brute force will just construct the solution if `:solved`, and search for it if `:reduced`
+          {status, csp} when status in [:solved, :reduced] -> Searcher.backtrack(csp, opts)
+          {:no_solution, _} -> :no_solution
+        end
     end
   end
 
@@ -123,8 +137,11 @@ defmodule Csp do
   end
 
   @doc """
-  TODO:
+  Orders values from `variable`'s domain by number of violated
+  constraints the `variable` participates in in the `assignment`
+  for `csp`.fun()
   """
+  @spec order_by_conflicts(t(), variable(), assignment()) :: [value()]
   def order_by_conflicts(csp, variable, assignment) do
     Map.fetch!(csp.domains, variable)
     |> Enum.sort_by(fn value ->
