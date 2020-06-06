@@ -1,5 +1,5 @@
 # Constraint Satisfaction Solvers
-![Build status](https://img.shields.io/github/workflow/status/Lakret/csp/Elixir%20CI) [![Hex.pm](https://img.shields.io/hexpm/v/csp)](https://hex.pm/packages/csp)
+![Build status](https://img.shields.io/github/workflow/status/Lakret/csp/Elixir%20CI) [![Hex.pm](https://img.shields.io/hexpm/v/csp)](https://hex.pm/packages/csp) ![Licenses](https://img.shields.io/hexpm/l/csp)
 
 This is a basic implementation of constraint satisfaction problem solver algorithms and some example problems in Elixir.
 
