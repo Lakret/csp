@@ -24,7 +24,7 @@ defmodule Csp.AC3 do
   If neither of those conditions is true, `:reduced` status is returend, irrespective of
   any actual domain reduction occuring.
   """
-  @spec solve(Csp.t()) :: Csp.solver_result()
+  @spec solve(Csp.t()) :: Csp.solve_result()
   def solve(csp) do
     csp = solve(csp, csp.constraints)
 
@@ -70,8 +70,7 @@ defmodule Csp.AC3 do
             Constraint.satisfies?(constraint, %{variable => value})
           end)
 
-        {csp, affected_dependents} =
-          reduce_domain(csp, constraint, variable, original_domain, reduced_domain)
+        {csp, affected_dependents} = reduce_domain(csp, constraint, variable, original_domain, reduced_domain)
 
         constraints =
           case affected_dependents do
@@ -86,8 +85,7 @@ defmodule Csp.AC3 do
         {csp, constraints_to_consider_from_x} = enforce_arc_consistency(csp, constraint, x, y)
         {csp, constraints_to_consider_from_y} = enforce_arc_consistency(csp, constraint, y, x)
 
-        constraints =
-          Enum.uniq(rest ++ constraints_to_consider_from_x ++ constraints_to_consider_from_y)
+        constraints = Enum.uniq(rest ++ constraints_to_consider_from_x ++ constraints_to_consider_from_y)
 
         solve(csp, constraints)
 

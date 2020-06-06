@@ -1,6 +1,12 @@
 defmodule Csp do
   @moduledoc """
   Constraint satisfaction problem definition & solver interface.
+
+  Use `solve/2` for solving the csp. You can generate example CSPs with `Csp.Problems` module functions.
+  For constructing your own CSPs, you can use helpers from `Csp.Domains` and `Csp.Constraint`.
+  You can specify custom constraints by implementing `Csp.Constraint` protocol.
+
+  Additionally, you can test some example problems with the provided escript CLI.
   """
   alias Csp.{Constraint, AC3, Backtracking, MinConflicts, Searcher}
 
@@ -35,8 +41,8 @@ defmodule Csp do
     - `:ac3` - AC-3 algorithm followed by backtracking
     - `:brute_force` - brute-force search.
 
-  You can pass options to backtracking (see `Backtracking.solve/2` docs),
-  min-conflicts (`MinConflicts.solve/2`), or brute-force (see `Searcher.brute_force/2`)
+  You can pass options to backtracking (see `Csp.Backtracking.solve/2` docs),
+  min-conflicts (`Csp.MinConflicts.solve/2`), or brute-force (see `Csp.Searcher.brute_force/2`)
   in this function's `opts`.
   """
   @spec solve(t(), Keyword.t()) :: solve_result()
@@ -62,9 +68,9 @@ defmodule Csp do
   end
 
   @doc """
-  Checks if `assignment` solves constraint satisfaction `problem`.
+  Checks if `assignment` solves `csp`.
   """
-  @spec solved?(problem :: t(), assignment()) :: boolean()
+  @spec solved?(csp :: t(), assignment()) :: boolean()
   def solved?(%__MODULE__{constraints: constraints}, assignment) do
     Enum.all?(constraints, &Constraint.satisfies?(&1, assignment))
   end
@@ -114,7 +120,7 @@ defmodule Csp do
 
   @doc """
   Returns a count of conflicts with `assignment` in `csp`,
-  i.e. constraints that the `assignment breaks.
+  i.e. constraints that the `assignment` breaks.
   """
   @spec count_conflicts(t(), assignment()) :: non_neg_integer()
   def count_conflicts(csp, assignment) do

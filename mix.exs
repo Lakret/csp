@@ -1,19 +1,24 @@
 defmodule Csp.MixProject do
   use Mix.Project
 
+  @version "0.0.1"
+  @description "Pure Elixir Constraint Satisfaction problem solvers"
+
   def project do
     [
       app: :csp,
-      version: "0.1.0",
+      version: @version,
+      description: @description,
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
+      package: package(),
+      name: "csp",
       escript: [main_module: Csp.CLI],
       deps: deps(),
       compilers: Mix.compilers()
     ]
   end
 
-  # Run "mix help compile.app" to learn about applications.
   def application do
     [
       extra_applications: [:logger],
@@ -21,10 +26,18 @@ defmodule Csp.MixProject do
     ]
   end
 
-  # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev], runtime: false}
     ]
+  end
+
+  defp package do
+    %{
+      license: ["Apache 2", "MIT"],
+      maintainers: ["Dmitry Slutsky"],
+      links: %{"GitHub" => "https://github.com/Lakret/csp"}
+    }
   end
 end

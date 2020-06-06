@@ -31,6 +31,9 @@ notes.exs
 native/csp_nif/target/
 native/csp_nif/.cargo/
 
-# escript & metals file
+# escript
 csp
+
+# metals & macOS files
 .metals/
+.DS_Store

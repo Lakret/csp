@@ -8,9 +8,9 @@ defmodule Csp.Backtracking do
   @type variable_selector :: :take_head | ([Csp.variable()] -> {Csp.variable(), [Csp.variable()]})
 
   @doc """
-  Simple backtracking implementation.
+  Backtracking implementation for solving CSPs.
 
-  Results are the same as in `brute_force/2`.
+  ## Options
 
   The following `opts` are supported:
 
