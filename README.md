@@ -2,15 +2,23 @@
 
 This is a basic implementation of constraint satisfaction problem solver algorithms and some example problems in Elixir.
 
-It has accompaying [Youtube video](https://www.youtube.com/watch?v=ao1CO8_V5do) and [Twitch stream](https://www.twitch.tv/videos/572863390).
+It has an accompanying [YouTube video](https://www.youtube.com/watch?v=ao1CO8_V5do) and [Twitch stream](https://www.twitch.tv/videos/572863390).
 
-You can test it by building and running an escript:
+## Installation
 
-```bash
-mix deps.get
-MIX_ENV=prod mix escript.build
-./csp
+The package can be installed by adding `decidex` to your list of dependencies in `mix.exs`:
+
+```elixir
+def deps do
+  [
+    {:csp, "~> 0.1"}
+  ]
+end
 ```
+
+Docs are available [on Hex.pm](https://hexdocs.pm/csp).
+
+## Usage
 
 Constraints are modelled as normal Elixir structs, with the following structure:
 
@@ -38,31 +46,39 @@ Constraints are modelled as normal Elixir structs, with the following structure:
 
 You can also use helpers from `Csp.Constraints` and `Csp.Domains` modules to simplify creating CSP definitions.
 
-Once you have a CSP definition, you can solve / reduce the domains of variables via `AC3` algorithm:
+Once you have a CSP definition, you can solve it:
 
 ```elixir
-Csp.AC3.solve(csp)
+Csp.solve(csp)
 ```
 
-or run backtracking search on the problem (check out the `Csp.Searcher` docs for all available options):
+You can specify different methods, for example, min-conflicts, and pass parameters to them, e.g.:
 
 ```elixir
-Csp.Searcher.backtrack(csp)
+Csp.solve(csp, method: :min_conflicts, tabu_depth: 10)
 ```
 
-## Currently provided test problems
+Additionally, you can check this repo out, build the provided escript, and play with the CLI interface for the example problems:
 
-- N Queens
-- Map coloring
-- Sudoku (taken [from here](https://en.wikipedia.org/wiki/Sudoku))
-- Squares problem
+```bash
+mix deps.get
+MIX_ENV=prod mix escript.build
+./csp
+```
 
 ## Currently implemented solvers
 
-- AC-3
-- simple backtracking search (supports AC-3 preprocessing and interlocked runs, and `variable_selector` strategies:
-naïve, minimum remaining values, and custom)
-- brute-force search (used for performance comparisons with backtracking; don't use it in real code!)
+- backtracking search (supports AC-3 inference, and `variable_selector` strategies: naïve, minimum remaining values, and custom)
+- min-conflicts with tabu search
+- AC-3 with backtracking to extract results
+- brute-force search (used for performance comparisons with backtracking; don't use it in the real code!)
+
+## Currently provided test problems
+
+- N Queens (with 3 different representations)
+- Map coloring
+- Sudoku (taken [from here](https://en.wikipedia.org/wiki/Sudoku))
+- Squares problem
 
 ## Future plans
 
