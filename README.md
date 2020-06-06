@@ -18,6 +18,8 @@ end
 
 Docs are available [on Hex.pm](https://hexdocs.pm/csp).
 
+The library is dually licensed under Apache 2 or MIT (choose whichever you prefer).
+
 ## Usage
 
 Constraints are modelled as normal Elixir structs, with the following structure:
