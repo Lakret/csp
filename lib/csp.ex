@@ -2,7 +2,7 @@ defmodule Csp do
   @moduledoc """
   Constraint satisfaction problem definition & solver interface.
   """
-  alias Csp.{Constraint, AC3, Searcher}
+  alias Csp.{Constraint, AC3, Backtracking, MinConflicts, Searcher}
 
   @type variable :: atom
   @type value :: any
@@ -10,8 +10,9 @@ defmodule Csp do
   @type constraint :: (value -> boolean) | (value, value -> boolean)
   @type assignment :: %{variable => value}
 
-  @type solver_status :: :solved | :reduced | :no_solution
-  @type solver_result :: {solver_status, t()}
+  # @type solver_status :: :solved | :reduced | :no_solution
+  # @type solver_result :: {solver_status, t()}
+  @type solve_result :: {:solved, assignment() | [assignment()]} | :no_solution
 
   @type t :: %__MODULE__{
           variables: [atom],
@@ -34,28 +35,27 @@ defmodule Csp do
     - `:ac3` - AC-3 algorithm followed by backtracking
     - `:brute_force` - brute-force search.
 
-  You can pass options to backtracking (see `Csp.Backtracking.search/2` docs),
-  min-conflicts (`Csp.MinConflicts.solve/2`), or brute-force (see `Csp.Searcher.brute_force/2`)
+  You can pass options to backtracking (see `Backtracking.solve/2` docs),
+  min-conflicts (`MinConflicts.solve/2`), or brute-force (see `Searcher.brute_force/2`)
   in this function's `opts`.
   """
-  @spec solve(Csp.t(), Keyword.t()) :: :no_solution | {:solved, assignment() | [assignment()]}
+  @spec solve(t(), Keyword.t()) :: solve_result()
   def solve(%__MODULE__{} = csp, opts \\ []) do
     method = Keyword.get(opts, :method, :backtracking)
 
     case method do
       :backtracking ->
-        Searcher.backtrack(csp, opts)
+        Backtracking.solve(csp, opts)
 
       :min_conflicts ->
-        Csp.MinConflicts.solve(csp, opts)
+        MinConflicts.solve(csp, opts)
 
       :brute_force ->
         Searcher.brute_force(csp, opts)
 
       :ac3 ->
         case AC3.solve(csp) do
-          # brute force will just construct the solution if `:solved`, and search for it if `:reduced`
-          {status, csp} when status in [:solved, :reduced] -> Searcher.backtrack(csp, opts)
+          {status, csp} when status in [:solved, :reduced] -> Backtracking.solve(csp, opts)
           {:no_solution, _} -> :no_solution
         end
     end
@@ -64,7 +64,7 @@ defmodule Csp do
   @doc """
   Checks if `assignment` solves constraint satisfaction `problem`.
   """
-  @spec solved?(problem :: t, assignment) :: boolean()
+  @spec solved?(problem :: t(), assignment()) :: boolean()
   def solved?(%__MODULE__{constraints: constraints}, assignment) do
     Enum.all?(constraints, &Constraint.satisfies?(&1, assignment))
   end
@@ -73,7 +73,7 @@ defmodule Csp do
   Returns a list of all constraints in `csp`
   that have `variable` as one of their arguments.
   """
-  @spec constraints_on(t(), variable) :: [Constraint.t()]
+  @spec constraints_on(t(), variable()) :: [Constraint.t()]
   def constraints_on(csp, variable) do
     Enum.filter(csp.constraints, fn constraint ->
       variable in Constraint.arguments(constraint)
@@ -84,7 +84,7 @@ defmodule Csp do
   Checks if (possibly partial) `assignment` satisfies all constraints in `csp`,
   for which it has enough assigned variables.
   """
-  @spec consistent?(t(), assignment) :: boolean()
+  @spec consistent?(t(), assignment()) :: boolean()
   def consistent?(csp, assignment) do
     assigned_variables = Map.keys(assignment) |> MapSet.new()
 

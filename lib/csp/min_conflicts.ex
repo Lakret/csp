@@ -24,13 +24,11 @@ defmodule Csp.MinConflicts do
     optimize_initial_state = Keyword.get(opts, :optimize_initial_state, false)
     tabu_depth = Keyword.get(opts, :tabu_depth)
 
-    assignment =
-      if optimize_initial_state, do: optimized_initial_state(csp), else: random_initial_state(csp)
+    assignment = if optimize_initial_state, do: optimized_initial_state(csp), else: random_initial_state(csp)
 
     {status, assignment, _tabu} =
       1..max_iterations
-      |> Enum.reduce_while({:no_solution, assignment, []}, fn _iteration,
-                                                              {status, assignment, tabu} ->
+      |> Enum.reduce_while({:no_solution, assignment, []}, fn _iteration, {status, assignment, tabu} ->
         if Csp.consistent?(csp, assignment) do
           {:halt, {:solved, assignment, tabu}}
         else
