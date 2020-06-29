@@ -7,7 +7,7 @@ It has an accompanying [YouTube video](https://www.youtube.com/watch?v=ao1CO8_V5
 
 ## Installation
 
-The package can be installed by adding `decidex` to your list of dependencies in `mix.exs`:
+The package can be installed by adding `csp` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
