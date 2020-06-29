@@ -29,12 +29,17 @@ defmodule Csp.MinConflicts do
     {status, assignment, _tabu} =
       1..max_iterations
       |> Enum.reduce_while({:no_solution, assignment, []}, fn _iteration, {status, assignment, tabu} ->
+        # TODO: replace with Csp.solved?, since it's cheaper, and we always have full assignment here.
         if Csp.consistent?(csp, assignment) do
           {:halt, {:solved, assignment, tabu}}
         else
           variable = Csp.conflicted(csp, assignment) |> Enum.random()
           random_value = Enum.random(csp.domains[variable])
 
+          # TODO: Make tabu a MapSet?
+          # TODO: replace find with manual reduce_while to take the first value that is not in tabu, or generate a default value if it's not found
+          # TODO: try with prohibiting the current value of the variable; or, better still, placing all current values in tabu before starting this
+          # TODO: more optimal representation for the n queens constraints as atoms
           value =
             Csp.order_by_conflicts(csp, variable, assignment)
             |> Enum.find(random_value, fn value -> {variable, value} not in tabu end)

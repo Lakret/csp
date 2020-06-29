@@ -29,7 +29,9 @@ defmodule Csp.MixProject do
   defp deps do
     [
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
-      {:dialyxir, "~> 1.0", only: [:dev], runtime: false}
+      {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
+      {:benchee, "~> 1.0", only: :dev},
+      {:benchee_csv, "~> 1.0", only: :dev}
     ]
   end
 
