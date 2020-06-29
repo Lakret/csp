@@ -12,9 +12,12 @@ Benchee.run(
   },
   inputs: %{
     "4 Queens optimal" => Problems.nqueens(4),
+    "6 Queens optimal" => Problems.nqueens(6),
     "8 Queens optimal" => Problems.nqueens(8),
     "10 Queens optimal" => Problems.nqueens(10),
-    "15 Queens optimal" => Problems.nqueens(15),
+    "12 Queens optimal" => Problems.nqueens(12),
+    "14 Queens optimal" => Problems.nqueens(14),
+    "16 Queens optimal" => Problems.nqueens(16),
     "4 Queens slower" => Problems.nqueens_slow(4),
     "8 Queens slower" => Problems.nqueens_slow(8),
     "10 Queens slower" => Problems.nqueens_slow(10)
