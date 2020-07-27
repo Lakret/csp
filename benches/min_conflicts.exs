@@ -41,6 +41,7 @@ Benchee.run(
 )
 
 # alias Csp.Problems
+# csp = Problems.nqueens(20)
 # csp = Problems.nqueens(32)
 # csp = Problems.nqueens(64)
 
@@ -53,7 +54,7 @@ times = [18_661_874, 11_259_981]
 
 {time, solution} =
   :timer.tc(fn ->
-    Csp.solve(csp, method: :min_conflicts, tabu_depth: 20, optimize_initial_state: true)
+    Csp.solve(csp, method: :min_conflicts, tabu_depth: 10, optimize_initial_state: true)
   end)
 
 times = [18_661_874, 11_259_981]

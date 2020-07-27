@@ -101,5 +101,8 @@ To run benchmarks, execute:
 mix run benches/min_conflicts.exs
 
 # Backtracking benchmark
-mix run benches/min_conflicts.exs
+mix run benches/backtracking.exs
+
+# Representation sensitivity benchmark
+mix run benches/backtracking_representations.exs
 ```
