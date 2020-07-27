@@ -91,3 +91,15 @@ MIX_ENV=prod mix escript.build
 - Possibly:
   - PC-2
   - Bounds propagation
+
+## Benchmarking
+
+To run benchmarks, execute:
+
+```bash
+# Min-conflicts benchmark
+mix run benches/min_conflicts.exs
+
+# Backtracking benchmark
+mix run benches/min_conflicts.exs
+```

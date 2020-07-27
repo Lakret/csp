@@ -1,0 +1,5 @@
+Name,Input,Iterations per Second,Standard Deviation Iterations Per Second,Run Time Average,Run Time Median,Run Time Minimum,Run Time Maximum,Run Time Standard Deviation,Run Time Standard Deviation Ratio,Run Time Sample Size,Memory Usage Average,Memory Usage Median,Memory Usage Minimum,Memory Usage Maximum,Memory Usage Standard Deviation,Memory Usage Standard Deviation Ratio,Memory Usage Sample Size
+min_conflicts_tabu_20,20 Queens,1.28508484014457,1.396882820167872,778158740.0,336525490.0,106228990.0,2211943990.0,845855885.3960121,1.086996575269478,8,,,,,,,0
+min_conflicts_tabu_10,20 Queens,0.755768217647401,0.5437085854893863,1323156990.0,1389156490.0,236046990.0,2278267990.0,951894772.2526897,0.719411815413294,4,,,,,,,0
+min_conflicts_tabu_20,32 Queens,0.4930929414514656,0.34445939674136083,2028015240.0,1811276990.0,591968990.0,3897537990.0,1416708387.8677773,0.6985689061526862,4,,,,,,,0
+min_conflicts_tabu_10,32 Queens,0.2544878622764826,0.2803296186924763,3929460490.0,3929460490.0,868766990.0,6990153990.0,4328474257.967176,1.1015441608288512,2,,,,,,,0
