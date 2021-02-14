@@ -11,6 +11,9 @@ defmodule Csp.MinConflicts do
 
   Supported `opts`:
 
+    - `:threads` - `nil`, or positive integer. If set to `nil`, executes single-threaded min-conflicts
+    run. If set to `n` where `n > 1`, executes parallel min-conflicts in `n` threads, and returns
+    as soon as first solution is received.
     - `:max_iteration` - positive integer, the number of iteration to perform before giving up.
     Defaults to `10_000`.
     - `:optimize_initial_state` - boolean, defaults to `false`. If set to `true`, will use a greedy
@@ -20,6 +23,55 @@ defmodule Csp.MinConflicts do
   """
   @spec solve(Csp.t(), Keyword.t()) :: {:solved, Csp.assignment()} | :no_solution
   def solve(csp, opts \\ []) do
+    case Keyword.get(opts, :threads) do
+      threads when is_number(threads) and threads > 0 ->
+        master_pid = self()
+
+        tasks =
+          1..threads
+          |> Enum.map(fn _id ->
+            {:ok, pid} =
+              Task.start(fn ->
+                solution = solve(csp, opts)
+
+                ^solution = send(master_pid, solution)
+                :ok
+              end)
+
+            pid
+          end)
+
+        result = wait_for_response(threads)
+
+        for task <- tasks do
+          Task.shutdown(task, :brutal_kill)
+        end
+
+        result
+
+      nil ->
+        solve(csp, opts)
+    end
+  end
+
+  ## Helpers
+
+  @spec wait_for_response(max_answers :: non_neg_integer()) :: :no_solution | {:solved, Csp.assignment()}
+  defp wait_for_response(0), do: :no_solution
+
+  defp wait_for_response(max_answers) when is_integer(max_answers) and max_answers > 0 do
+    receive do
+      :no_solution ->
+        wait_for_response(max_answers - 1)
+
+      {:solved, _solution} = result ->
+        result
+    end
+  end
+
+  @doc false
+  @spec solve_inner(Csp.t(), Keyword.t()) :: {:solved, Csp.assignment()} | :no_solution
+  def solve_inner(csp, opts) do
     max_iterations = Keyword.get(opts, :max_iterations, 10_000)
     optimize_initial_state = Keyword.get(opts, :optimize_initial_state, false)
     tabu_depth = Keyword.get(opts, :tabu_depth)
@@ -29,8 +81,7 @@ defmodule Csp.MinConflicts do
     {status, assignment, _tabu} =
       1..max_iterations
       |> Enum.reduce_while({:no_solution, assignment, []}, fn _iteration, {status, assignment, tabu} ->
-        # TODO: replace with Csp.solved?, since it's cheaper, and we always have full assignment here.
-        if Csp.consistent?(csp, assignment) do
+        if Csp.solved?(csp, assignment) do
           {:halt, {:solved, assignment, tabu}}
         else
           variable = Csp.conflicted(csp, assignment) |> Enum.random()
@@ -59,8 +110,6 @@ defmodule Csp.MinConflicts do
 
     if status == :no_solution, do: status, else: {status, assignment}
   end
-
-  ## Helpers
 
   @spec random_initial_state(Csp.t()) :: Csp.assignment()
   defp random_initial_state(%Csp{} = csp) do
